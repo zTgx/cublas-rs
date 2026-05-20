@@ -9,20 +9,36 @@ A BLAS implementation built on [cuda-oxide](https://github.com/NVlabs/cuda-oxide
 - **Batched GEMM** - Concurrent multi-batch execution via CUDA streams
 - **Vector ops** - SAXPY, DOT, NRM2
 
-## Workspace structure
+## Quick start
 
-```
-crates/
-  cublas-core/          Shared config and traits
-  cublas-sgemm/         SGEMM kernels
-  cublas-dgemm/         DGEMM kernels
-  cublas-hgemm/         HGEMM kernels
-  cublas-batched-gemm/  Batched GEMM kernels
-  cublas-vector/        Vector operation kernels
-  cublas-rs/            Unified API (re-exports all kernels)
-  cublas-bench-core/    Benchmark utilities
-benches/                Performance benchmarks vs NVIDIA cuBLAS
-examples/              Usage examples
+```rust
+use cublas_rs::{Gemm, GemmConfig};
+use cuda_core::{DeviceBuffer, Stream};
+
+// SGEMM: C = alpha * A * B + beta * C
+fn main() {
+    let m = 512;
+    let n = 512;
+    let k = 512;
+
+    let mut a = DeviceBuffer::<f32>::alloc(m * k);
+    let mut b = DeviceBuffer::<f32>::alloc(k * n);
+    let mut c = DeviceBuffer::<f32>::alloc(m * n);
+
+    // ... fill a, b ...
+
+    let stream = Stream::create();
+
+    Gemm::sgemm(
+        &stream,
+        GemmConfig { m, n, k, alpha: 1.0, beta: 0.0 },
+        &a,   // A: m x k
+        &b,   // B: k x n
+        &mut c, // C: m x n
+    );
+
+    stream.synchronize();
+}
 ```
 
 ## Requirements
