@@ -15,15 +15,6 @@
 // Re-export all core types
 pub use cublas_core::*;
 
-// Re-export all GEMM kernels
-pub use cublas_sgemm::*;
-pub use cublas_dgemm::*;
-pub use cublas_hgemm::*;
-pub use cublas_batched_gemm::*;
-
-// Re-export vector operations
-pub use cublas_vector::*;
-
 /// SGEMM module
 pub mod sgemm {
     pub use cublas_sgemm::*;
@@ -47,11 +38,6 @@ pub mod batched {
 /// Vector operations module
 pub mod vector {
     pub use cublas_vector::*;
-}
-
-/// Benchmark utilities module
-pub mod bench {
-    pub use cublas_bench_core::*;
 }
 
 pub mod prelude {
