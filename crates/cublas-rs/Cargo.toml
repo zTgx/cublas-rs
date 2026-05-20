@@ -1,0 +1,13 @@
+[package]
+name = "cublas-rs"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+cublas-core.workspace = true
+cublas-sgemm.workspace = true
+cublas-dgemm.workspace = true
+cublas-hgemm.workspace = true
+cublas-batched-gemm.workspace = true
+cublas-vector.workspace = true
+cuda-core.workspace = true

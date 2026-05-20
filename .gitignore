@@ -1,0 +1,10 @@
+target/
+.DS_Store
+*.ptx
+*.ll
+*.bc
+*.cubin
+*.fatbin
+
+.vscode/
+.claude/

@@ -1,0 +1,9 @@
+[package]
+name = "cublas-batched-gemm"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+cublas-core.workspace = true
+cuda-core.workspace = true
+cuda-device.workspace = true

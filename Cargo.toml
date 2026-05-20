@@ -1,0 +1,32 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/cublas-rs",
+    "crates/cublas-core",
+    "crates/cublas-sgemm",
+    "crates/cublas-dgemm",
+    "crates/cublas-hgemm",
+    "crates/cublas-batched-gemm",
+    "crates/cublas-vector",
+    "crates/cublas-bench-core",
+    "benches",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+
+[workspace.dependencies]
+cublas-rs = { path = "crates/cublas-rs" }
+cublas-core = { path = "crates/cublas-core" }
+cublas-sgemm = { path = "crates/cublas-sgemm" }
+cublas-dgemm = { path = "crates/cublas-dgemm" }
+cublas-hgemm = { path = "crates/cublas-hgemm" }
+cublas-batched-gemm = { path = "crates/cublas-batched-gemm" }
+cublas-vector = { path = "crates/cublas-vector" }
+cublas-bench-core = { path = "crates/cublas-bench-core" }
+cuda-core = { path = "../cuda-oxide/crates/cuda-core" }
+cuda-device = { path = "../cuda-oxide/crates/cuda-device" }
+half = "2.7"
+cuda-oxide = "0.1"

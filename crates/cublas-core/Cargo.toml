@@ -1,0 +1,7 @@
+[package]
+name = "cublas-core"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+half.workspace = true

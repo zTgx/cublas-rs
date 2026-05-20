@@ -1,0 +1,9 @@
+[package]
+name = "cublas-benches"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+cublas-rs.workspace = true
+cublas-bench-core.workspace = true
+cuda-core.workspace = true
