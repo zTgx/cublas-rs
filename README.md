@@ -12,32 +12,22 @@ A BLAS implementation built on [cuda-oxide](https://github.com/NVlabs/cuda-oxide
 ## Quick start
 
 ```rust
-use cublas_rs::{Gemm, GemmConfig};
-use cuda_core::{DeviceBuffer, Stream};
+use cublas_rs::{prelude::*, sgemm_naive};
 
-// SGEMM: C = alpha * A * B + beta * C
 fn main() {
-    let m = 512;
-    let n = 512;
-    let k = 512;
+    let config = GemmConfig {
+        m: 512,
+        n: 512,
+        k: 512,
+        alpha: 1.0,
+        beta: 0.0,
+    };
 
-    let mut a = DeviceBuffer::<f32>::alloc(m * k);
-    let mut b = DeviceBuffer::<f32>::alloc(k * n);
-    let mut c = DeviceBuffer::<f32>::alloc(m * n);
+    let mut a = vec![1.0f32; config.m * config.k];
+    let mut b = vec![1.0f32; config.k * config.n];
+    let mut c = vec![0.0f32; config.m * config.n];
 
-    // ... fill a, b ...
-
-    let stream = Stream::create();
-
-    Gemm::sgemm(
-        &stream,
-        GemmConfig { m, n, k, alpha: 1.0, beta: 0.0 },
-        &a,   // A: m x k
-        &b,   // B: k x n
-        &mut c, // C: m x n
-    );
-
-    stream.synchronize();
+    sgemm_naive(&config, &a, &b, &mut c);
 }
 ```
 
