@@ -29,7 +29,6 @@ examples/              Usage examples
 
 - Nightly Rust (see `rust-toolchain.toml`)
 - CUDA toolkit
-- [cuda-oxide](https://github.com/NVlabs/cuda-oxide) as a sibling directory
 
 ## License
 

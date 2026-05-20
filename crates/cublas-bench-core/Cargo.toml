@@ -2,6 +2,10 @@
 name = "cublas-bench-core"
 version.workspace = true
 edition.workspace = true
+authors.workspace = true
+description = "Benchmark utilities for cuBLAS-rs"
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
 cuda-core.workspace = true

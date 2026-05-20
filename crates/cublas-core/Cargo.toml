@@ -2,6 +2,10 @@
 name = "cublas-core"
 version.workspace = true
 edition.workspace = true
+authors.workspace = true
+description = "Shared config and traits for cuBLAS-rs"
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
 half.workspace = true

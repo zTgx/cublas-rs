@@ -1,7 +1,11 @@
 [package]
 name = "cublas-rs"
-version = "0.1.0"
+version.workspace = true
 edition.workspace = true
+authors.workspace = true
+description = "A BLAS implementation built on cuda-oxide"
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
 cublas-core.workspace = true

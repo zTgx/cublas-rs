@@ -2,6 +2,10 @@
 name = "cublas-vector"
 version.workspace = true
 edition.workspace = true
+authors.workspace = true
+description = "BLAS vector operations (SAXPY, DOT, NRM2) built on cuda-oxide"
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
 cublas-core.workspace = true

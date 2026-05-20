@@ -2,6 +2,10 @@
 name = "cublas-sgemm"
 version.workspace = true
 edition.workspace = true
+authors.workspace = true
+description = "SGEMM kernels built on cuda-oxide"
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
 cublas-core.workspace = true

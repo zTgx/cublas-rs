@@ -2,6 +2,11 @@
 name = "cublas-benches"
 version.workspace = true
 edition.workspace = true
+authors.workspace = true
+description = "Performance benchmarks for cuBLAS-rs"
+license.workspace = true
+repository.workspace = true
+publish = false
 
 [dependencies]
 cublas-rs.workspace = true
