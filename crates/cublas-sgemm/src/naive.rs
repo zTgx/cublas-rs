@@ -13,12 +13,7 @@ use cublas_core::GemmConfig;
 /// * `a` - Row-major matrix A of shape (m, k)
 /// * `b` - Row-major matrix B of shape (k, n)
 /// * `c` - Row-major matrix C of shape (m, n), overwritten with the result
-pub fn sgemm_naive(
-    config: &GemmConfig<f32>,
-    a: &[f32],
-    b: &[f32],
-    c: &mut [f32],
-) {
+pub fn sgemm_naive(config: &GemmConfig<f32>, a: &[f32], b: &[f32], c: &mut [f32]) {
     // TODO: implement kernel launch via cuda-oxide
     let _ = (config, a, b, c);
     todo!("launch naive SGEMM kernel")

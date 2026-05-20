@@ -20,11 +20,7 @@ pub fn validate_gemm(
 }
 
 /// Validates a vector operation result element-wise.
-pub fn validate_vector(
-    expected: &[f32],
-    actual: &[f32],
-    tolerance: f32,
-) -> Result<(), String> {
+pub fn validate_vector(expected: &[f32], actual: &[f32], tolerance: f32) -> Result<(), String> {
     let _ = (expected, actual, tolerance);
     todo!("implement vector validation")
 }

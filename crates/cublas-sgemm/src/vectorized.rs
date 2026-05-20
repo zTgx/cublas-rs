@@ -8,12 +8,7 @@ use cublas_core::GemmConfig;
 /// Vectorized SGEMM kernel launch.
 ///
 /// Uses vectorized memory accesses (float4) for higher memory bandwidth utilization.
-pub fn sgemm_vectorized(
-    config: &GemmConfig<f32>,
-    a: &[f32],
-    b: &[f32],
-    c: &mut [f32],
-) {
+pub fn sgemm_vectorized(config: &GemmConfig<f32>, a: &[f32], b: &[f32], c: &mut [f32]) {
     // TODO: implement kernel launch via cuda-oxide
     let _ = (config, a, b, c);
     todo!("launch vectorized SGEMM kernel")

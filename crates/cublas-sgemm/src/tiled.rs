@@ -9,12 +9,7 @@ use cublas_core::GemmConfig;
 ///
 /// Tiles A and B into shared memory blocks of TILE_SIZE x TILE_SIZE.
 /// Dramatically reduces global memory reads compared to the naive version.
-pub fn sgemm_tiled(
-    config: &GemmConfig<f32>,
-    a: &[f32],
-    b: &[f32],
-    c: &mut [f32],
-) {
+pub fn sgemm_tiled(config: &GemmConfig<f32>, a: &[f32], b: &[f32], c: &mut [f32]) {
     // TODO: implement kernel launch via cuda-oxide
     let _ = (config, a, b, c);
     todo!("launch tiled SGEMM kernel")

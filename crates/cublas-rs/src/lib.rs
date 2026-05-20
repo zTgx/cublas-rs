@@ -1,5 +1,5 @@
-pub mod gemm;
 pub mod batched;
+pub mod gemm;
 pub mod vector;
 
 // Re-export core types
