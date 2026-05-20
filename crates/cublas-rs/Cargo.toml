@@ -14,4 +14,3 @@ cublas-dgemm.workspace = true
 cublas-hgemm.workspace = true
 cublas-batched-gemm.workspace = true
 cublas-vector.workspace = true
-cuda-core.workspace = true

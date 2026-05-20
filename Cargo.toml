@@ -28,7 +28,5 @@ cublas-hgemm = { path = "crates/cublas-hgemm" }
 cublas-batched-gemm = { path = "crates/cublas-batched-gemm" }
 cublas-vector = { path = "crates/cublas-vector" }
 cublas-bench-core = { path = "crates/cublas-bench-core" }
-cuda-core = { path = "../cuda-oxide/crates/cuda-core" }
-cuda-device = { path = "../cuda-oxide/crates/cuda-device" }
 half = "2.7"
-cuda-oxide = "0.1"
+cuda-oxide = { git = "https://github.com/NVlabs/cuda-oxide", branch = "main" }
