@@ -47,10 +47,11 @@ that compiles `#[kernel]` Rust to PTX):
 # One-time install of the cargo-oxide subcommand
 cargo install --git https://github.com/NVlabs/cuda-oxide.git cargo-oxide
 
-# Build + run the SAXPY smoke test
+# Build + run the toolchain hello-world (works on any CUDA card sm_20+)
 cargo oxide build
-cargo oxide run                     # default-run picks saxpy
-cargo oxide run --bin sgemm_basic   # the other one
+cargo oxide run                     # default-run = hello
+cargo oxide run --bin saxpy         # L1 kernel smoke test
+cargo oxide run --bin sgemm_basic   # L3 (stub — will panic)
 ```
 
 Examples live at `crates/cublas-rs/examples/` and are declared as `[[bin]]`

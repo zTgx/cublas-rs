@@ -1,7 +1,6 @@
 //! SAXPY end-to-end smoke test.
 //!
 //! Run with:
-//!   cargo oxide run            (default-run)
 //!   cargo oxide run --bin saxpy
 
 use cublas_rs::saxpy;

@@ -147,6 +147,9 @@ dependencies = [
  "cublas-l1",
  "cublas-l2",
  "cublas-l3",
+ "cuda-core",
+ "cuda-device",
+ "cuda-host",
 ]
 
 [[package]]

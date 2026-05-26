@@ -7,9 +7,10 @@ description = "A BLAS implementation built on cuda-oxide"
 license.workspace = true
 repository.workspace = true
 # cargo-oxide standalone mode only forwards `--bin <name>` to cargo (not
-# `--example`), so smoke tests are declared as bins. `default-run` makes
-# `cargo oxide run` pick the L1 smoke test without `--bin`.
-default-run = "saxpy"
+# `--example`), so smoke tests are declared as bins. `default-run = "hello"`
+# makes a bare `cargo oxide run` exercise the most basic toolchain path
+# (no BLAS dep, no shared memory) — works on any CUDA card sm_20+.
+default-run = "hello"
 # Files in `examples/` are declared explicitly as `[[bin]]` below — disable
 # auto-discovery so the same file isn't claimed by both target kinds.
 autoexamples = false
@@ -19,6 +20,15 @@ cublas-core.workspace = true
 cublas-l1.workspace = true
 cublas-l2.workspace = true
 cublas-l3.workspace = true
+# `hello.rs` uses cuda-oxide directly (not via cublas-l*), so add the host +
+# device runtime crates explicitly.
+cuda-core.workspace = true
+cuda-device.workspace = true
+cuda-host.workspace = true
+
+[[bin]]
+name = "hello"
+path = "examples/hello.rs"
 
 [[bin]]
 name = "saxpy"

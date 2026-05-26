@@ -28,9 +28,14 @@ cargo-oxide's standalone mode only forwards `--bin <name>` to the underlying
 `cargo run`, not `--example`. Run them with:
 
 ```bash
-cargo oxide run                     # default-run = saxpy
-cargo oxide run --bin sgemm_basic
+cargo oxide run                     # default-run = hello (pure toolchain check)
+cargo oxide run --bin saxpy         # L1 kernel exercise
+cargo oxide run --bin sgemm_basic   # L3 kernel exercise (will panic — stub)
 ```
+
+`hello` uses `gpu_printf!` and works on any CUDA card sm_20+. Use it to
+confirm cuda-oxide → PTX → driver → launch is healthy before debugging any
+BLAS-side issue.
 
 `default-members = ["crates/cublas-rs"]` in the workspace `Cargo.toml` makes
 these commands work from the repo root without `-p cublas-rs`.
