@@ -1,8 +1,14 @@
 // SDOT: sum(x[i] * y[i])
 //
-// Single-block, 32-thread reduction using shared memory. Works from Kepler
-// (sm_30) up — older arch than the warp-shuffle path that needs sm_70+ to
-// emit cleanly via LLVM's nvptx backend.
+// Single-block, 32-thread reduction using shared memory. Correct on every
+// arch from Kepler (sm_30) up; *slow* for large n because only one warp
+// processes the whole vector.
+//
+// TODO(perf): upgrade to a multi-block grid-stride design — each block
+// computes a partial sum into a per-block buffer, then a second pass (or
+// atomicAdd) collapses. Also: on sm_70+ swap the shared-mem tree for a
+// `warp::shuffle_xor_f32` butterfly. Skipped on sm_61 because LLVM's nvptx
+// backend can't select `llvm.nvvm.shfl.sync.bfly.i32` on Pascal.
 
 use cublas_core::Result;
 use cuda_core::{CudaStream, DeviceBuffer, LaunchConfig};

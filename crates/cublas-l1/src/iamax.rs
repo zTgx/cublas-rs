@@ -1,6 +1,8 @@
 // ISAMAX: argmax(|x[i]|), 0-based.
 //
-// 32-thread shared-memory tree reduction tracking (|value|, index) pairs.
+// 32-thread single-block shared-memory tree reduction tracking
+// (|value|, index) pairs. See `dot.rs` for the multi-block / warp-shuffle
+// perf TODO.
 
 use cublas_core::Result;
 use cuda_core::{CudaStream, DeviceBuffer, LaunchConfig};

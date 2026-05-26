@@ -1,7 +1,8 @@
 // SNRM2: sqrt(sum(x[i]^2))
 //
 // Kernel computes the sum-of-squares; the host takes sqrt. Same 32-thread
-// shared-memory tree reduction as `sdot`.
+// single-block shared-memory tree reduction as `sdot`. See `sdot.rs` for
+// the multi-block / warp-shuffle TODO.
 
 use cublas_core::Result;
 use cuda_core::{CudaStream, DeviceBuffer, LaunchConfig};
