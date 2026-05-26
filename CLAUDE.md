@@ -194,18 +194,30 @@ that use `Handle` must run from the workspace root (where cargo-oxide drops
 the PTX files).
 
 **v1 (current):**
-- Public API is the `Handle` type on `cublas-rs`, modelled after
-  `cublasHandle_t` from the C cuBLAS API: `Handle::new()?`, then
-  `handle.saxpy(n, alpha, &x, &mut y)`.
-- Level crates (`cublas-l1`, ...) expose free host fns that take a typed
-  kernel module + stream as the first two args. `Handle` owns those modules
-  and forwards.
-- Host fns still take `&[T]` host slices and allocate device buffers per
-  call. Wasteful for repeated calls; fine for the smoke-test use case.
+- `Handle` on `cublas-rs` is the **sole** public entry point. Every L1 / L2
+  / L3 op (including future batched/strided) is a method on `Handle`. The
+  facade does **not** re-export `cublas_l1::*` / `cublas_l2::*` etc., so
+  callers can't bypass the handle.
+- Level crates (`cublas-l1`, ...) host free fns + per-level `Modules` are
+  internal wiring. When a kernel exists, the free fn takes
+  `(module, stream, ...)` and the Handle method forwards into it. When the
+  kernel is still a stub, the Handle method calls `todo!()` directly and the
+  free fn isn't used.
+- Host fns take `&[T]` host slices and allocate device buffers per call.
+  Wasteful for repeated calls; fine for the smoke-test use case.
 
 **v2 (planned):** Public ops on `Handle` will gain `&DeviceBuffer<T>`
 variants so callers can amortize H2D/D2H. Slice-taking variants stay as the
 shorthand.
+
+**Adding a new kernel — full checklist:**
+1. Fill in `#[cuda_module] pub mod kernels` in the op's `.rs` (e.g.
+   `cublas-l1/src/sscal.rs`).
+2. Give the file's host fn the `(module, stream, ...)` signature.
+3. Add a field on the level crate's `Modules` struct and call
+   `op::kernels::from_module(raw_module.clone())` in `Modules::load`.
+4. Replace the `todo!()` in the matching `Handle::<op>` method body with a
+   call into the level crate's free fn.
 
 ## Implementation status
 

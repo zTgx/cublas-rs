@@ -1,13 +1,13 @@
 //! SGEMM end-to-end smoke test (naive variant).
 //!
-//! NOTE: `sgemm_naive` is currently a `todo!()` stub — this example will
-//! panic at runtime. Compiles successfully so it can serve as the L3 usage
-//! template until the kernel is filled in.
+//! NOTE: `Handle::sgemm_naive` is currently a `todo!()` stub — this example
+//! will panic at runtime. Compiles successfully so it can serve as the L3
+//! usage template (Handle-style call pattern) until the kernel is filled in.
 //!
 //! Run with:
 //!   cargo oxide run --bin sgemm_basic
 
-use cublas_rs::{prelude::*, sgemm_naive};
+use cublas_rs::{Handle, prelude::*};
 
 fn main() {
     const M: usize = 512;
@@ -26,9 +26,9 @@ fn main() {
     let b = vec![1.0f32; K * N];
     let mut c = vec![0.0f32; M * N];
 
-    sgemm_naive(&config, &a, &b, &mut c);
+    let h = Handle::new().expect("Handle::new");
+    h.sgemm_naive(&config, &a, &b, &mut c);
 
-    // Each c[i] should equal K (sum of K ones).
     let expected = K as f32;
     let bad = c.iter().filter(|&&v| (v - expected).abs() > 1e-3).count();
 

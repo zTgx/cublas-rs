@@ -150,6 +150,7 @@ dependencies = [
  "cuda-core",
  "cuda-device",
  "cuda-host",
+ "half",
 ]
 
 [[package]]
