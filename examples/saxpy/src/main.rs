@@ -171,4 +171,42 @@ fn main() {
     if !h16_ok {
         std::process::exit(1);
     }
+
+    // daxpy smoke (f64).
+    const DN: usize = 256;
+    let xd: Vec<f64> = (0..DN).map(|i| i as f64).collect();
+    let mut yd = vec![1.0f64; DN];
+    h.daxpy_simple(DN, 3.0, &xd, &mut yd).expect("daxpy");
+    let daxpy_ok = yd
+        .iter()
+        .enumerate()
+        .all(|(i, &v)| (v - (3.0 * i as f64 + 1.0)).abs() < 1e-9);
+    println!("L1 daxpy (f64): {}", if daxpy_ok { "OK" } else { "FAIL" });
+
+    // haxpy smoke (f16 via bit-twiddle).
+    let xh: Vec<f16> = (0..DN).map(|i| f16::from_f32((i as f32) * 0.1)).collect();
+    let mut yh = vec![f16::from_f32(0.5); DN];
+    h.haxpy(DN, f16::from_f32(2.0), &xh, &mut yh)
+        .expect("haxpy");
+    let mut haxpy_ok = true;
+    let mut haxpy_max_err = 0.0f32;
+    for i in 0..DN {
+        let expected = 2.0 * (i as f32) * 0.1 + 0.5;
+        let got = yh[i].to_f32();
+        let err = (got - expected).abs() / expected.abs().max(1e-3);
+        if err > 5e-3 {
+            haxpy_ok = false;
+        }
+        if err > haxpy_max_err {
+            haxpy_max_err = err;
+        }
+    }
+    println!(
+        "L1 haxpy (f16): {} (max rel_err {haxpy_max_err:.2e})",
+        if haxpy_ok { "OK" } else { "FAIL" }
+    );
+
+    if !daxpy_ok || !haxpy_ok {
+        std::process::exit(1);
+    }
 }

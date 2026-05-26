@@ -8,3 +8,4 @@ publish = false
 
 [dependencies]
 cublas-rs.workspace = true
+half.workspace = true

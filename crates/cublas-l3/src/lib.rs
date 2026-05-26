@@ -38,6 +38,7 @@ pub use sgemm::{
 pub struct Modules {
     pub sgemm: sgemm::kernels::LoadedModule,
     pub dgemm: dgemm::kernels::LoadedModule,
+    pub hgemm: hgemm::kernels::LoadedModule,
     pub batched: batched::kernels::LoadedModule,
 }
 
@@ -52,6 +53,7 @@ impl Modules {
         Ok(Self {
             sgemm: sgemm::kernels::from_module(raw.clone())?,
             dgemm: dgemm::kernels::from_module(raw.clone())?,
+            hgemm: hgemm::kernels::from_module(raw.clone())?,
             batched: batched::kernels::from_module(raw)?,
         })
     }

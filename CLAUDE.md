@@ -230,7 +230,8 @@ shorthand.
 | L1    | `snrm2`                         | `cublas-l1/src/nrm2.rs`                       | ✓      |
 | L1    | `sasum`                         | `cublas-l1/src/asum.rs`                       | ✓      |
 | L1    | `isamax`                        | `cublas-l1/src/iamax.rs`                      | ✓      |
-| L1    | `daxpy/haxpy`                   | `cublas-l1/src/axpy.rs`                       | stub   |
+| L1    | `daxpy` (f64)                   | `cublas-l1/src/axpy.rs`                       | ✓      |
+| L1    | `haxpy` (f16)                   | `cublas-l1/src/axpy.rs`                       | ✓ — u16 bit-twiddle, f32 accumulate           |
 | L2    | `sgemv` (naive + tiled)         | `cublas-l2/src/gemv.rs`                       | ✓      |
 | L2    | `dgemv`                         | `cublas-l2/src/gemv.rs`                       | ✓      |
 | L2    | `hgemv`                         | `cublas-l2/src/gemv.rs`                       | ✓ — raw-u16 in/out, f32 accumulate, IEEE-754 bit-twiddle (subnormals flushed) |
@@ -239,7 +240,7 @@ shorthand.
 | L3    | `sgemm_*` (naive/tiled/vectorized/double_buf) | `cublas-l3/src/sgemm.rs`        | ✓      |
 | L3    | `dgemm_naive` + `dgemm_tiled`   | `cublas-l3/src/dgemm.rs`                      | ✓      |
 | L3    | `dgemm_vectorized/double_buf`   | `cublas-l3/src/dgemm.rs`                      | stub   |
-| L3    | `hgemm_half`                    | `cublas-l3/src/hgemm.rs`                      | stub   |
+| L3    | `hgemm_half`                    | `cublas-l3/src/hgemm.rs`                      | ✓ — tiled 16×16, u16 bit-twiddle, f32 accumulate |
 | L3    | `hgemm_tensor_core`             | `cublas-l3/src/hgemm.rs`                      | blocked — WMMA wrapper missing |
 | L3    | `strided_batched_sgemm`         | `cublas-l3/src/batched.rs`                    | ✓ — 3D grid, blockIdx.z = batch, 16×16 tile per block |
 | L3    | `batched_sgemm`                 | `cublas-l3/src/batched.rs`                    | ✓ — host concat + delegate to strided         |

@@ -32,6 +32,7 @@ pub use scal::sscal;
 
 // Device-buffer primary path.
 pub use asum::sasum_dev;
+pub use axpy::daxpy_dev;
 pub use copy::scopy_dev;
 pub use dot::sdot_dev;
 pub use iamax::isamax_dev;
@@ -49,6 +50,8 @@ pub struct Modules {
     pub snrm2: nrm2::kernels::LoadedModule,
     pub sasum: asum::kernels::LoadedModule,
     pub isamax: iamax::kernels::LoadedModule,
+    pub daxpy: axpy::daxpy_kernels::LoadedModule,
+    pub haxpy: axpy::haxpy_kernels::LoadedModule,
 }
 
 impl Modules {
@@ -67,7 +70,9 @@ impl Modules {
             sdot: dot::kernels::from_module(raw.clone())?,
             snrm2: nrm2::kernels::from_module(raw.clone())?,
             sasum: asum::kernels::from_module(raw.clone())?,
-            isamax: iamax::kernels::from_module(raw)?,
+            isamax: iamax::kernels::from_module(raw.clone())?,
+            daxpy: axpy::daxpy_kernels::from_module(raw.clone())?,
+            haxpy: axpy::haxpy_kernels::from_module(raw)?,
         })
     }
 }

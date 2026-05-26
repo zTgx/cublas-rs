@@ -193,16 +193,32 @@ impl Handle {
         cublas_l1::isamax(&self.l1.isamax, &self.stream, n, x)
     }
 
-    /// `y := alpha * x + y` (f64). Stub.
-    pub fn daxpy(&self, n: usize, alpha: f64, x: &[f64], y: &mut [f64]) -> Result<()> {
-        let _ = (n, alpha, x, y);
-        todo!("DAXPY kernel not yet implemented");
+    /// `y := alpha * x + y` (f64, device buffers).
+    pub fn daxpy(
+        &self,
+        n: usize,
+        alpha: f64,
+        x: &DeviceBuffer<f64>,
+        y: &mut DeviceBuffer<f64>,
+    ) -> Result<()> {
+        cublas_l1::daxpy_dev(&self.l1.daxpy, &self.stream, n, alpha, x, y)
     }
 
-    /// `y := alpha * x + y` (f16). Stub.
+    /// `y := alpha * x + y` (f64, host slices).
+    pub fn daxpy_simple(
+        &self,
+        n: usize,
+        alpha: f64,
+        x: &[f64],
+        y: &mut [f64],
+    ) -> Result<()> {
+        cublas_l1::daxpy(&self.l1.daxpy, &self.stream, n, alpha, x, y)
+    }
+
+    /// `y := alpha * x + y` (f16 in/out via raw u16, f32 accumulate).
+    /// Host slices only — same rationale as `hgemv`.
     pub fn haxpy(&self, n: usize, alpha: f16, x: &[f16], y: &mut [f16]) -> Result<()> {
-        let _ = (n, alpha, x, y);
-        todo!("HAXPY kernel not yet implemented");
+        cublas_l1::haxpy(&self.l1.haxpy, &self.stream, n, alpha, x, y)
     }
 
     // =====================================================================
@@ -573,6 +589,8 @@ impl Handle {
         todo!("double-buffered DGEMM kernel not yet implemented");
     }
 
+    /// `C := alpha * A * B + beta * C` (f16 in/out via raw u16, f32 accumulate).
+    /// 16×16 tiled. Host slices only — same rationale as `hgemv`.
     pub fn hgemm_half(
         &self,
         config: &GemmConfig<f16>,
@@ -580,8 +598,7 @@ impl Handle {
         b: &[f16],
         c: &mut [f16],
     ) -> Result<()> {
-        let _ = (config, a, b, c);
-        todo!("scalar HGEMM kernel not yet implemented");
+        cublas_l3::hgemm_half(&self.l3.hgemm, &self.stream, config, a, b, c)
     }
 
     pub fn hgemm_tensor_core(

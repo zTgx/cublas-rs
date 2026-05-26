@@ -486,6 +486,7 @@ name = "sgemm"
 version = "0.1.0"
 dependencies = [
  "cublas-rs",
+ "half",
 ]
 
 [[package]]

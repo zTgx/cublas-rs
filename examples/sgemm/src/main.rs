@@ -132,6 +132,47 @@ fn main() {
     if bad_batched != 0 {
         std::process::exit(1);
     }
+
+    // HGEMM (f16, scalar tiled). 128³, A=ones × B=ones → C = K = 128.
+    use half::f16;
+    println!();
+    const HM: usize = 128;
+    const HN: usize = 128;
+    const HK: usize = 128;
+    let cfg_h = GemmConfig::<f16> {
+        m: HM,
+        n: HN,
+        k: HK,
+        alpha: f16::from_f32(1.0),
+        beta: f16::from_f32(0.0),
+    };
+    let a_h = vec![f16::from_f32(1.0); HM * HK];
+    let b_h = vec![f16::from_f32(1.0); HK * HN];
+    let mut c_h = vec![f16::from_f32(0.0); HM * HN];
+    let start = Instant::now();
+    h.hgemm_half(&cfg_h, &a_h, &b_h, &mut c_h).expect("hgemm_half");
+    let elapsed = start.elapsed();
+    let expected = HK as f32;
+    let mut hgemm_ok = true;
+    let mut hgemm_max_err = 0.0f32;
+    for v in &c_h {
+        let got = v.to_f32();
+        let err = (got - expected).abs() / expected.abs();
+        if err > 5e-3 {
+            hgemm_ok = false;
+        }
+        if err > hgemm_max_err {
+            hgemm_max_err = err;
+        }
+    }
+    println!(
+        "HGEMM half ({HM}×{HN}×{HK}, f16): {:.3} ms  {} (max rel_err {hgemm_max_err:.2e})",
+        elapsed.as_secs_f64() * 1000.0,
+        if hgemm_ok { "OK" } else { "FAIL" }
+    );
+    if !hgemm_ok {
+        std::process::exit(1);
+    }
 }
 
 fn run_variant<F>(name: &str, h: &Handle, cfg: &GemmConfig<f32>, a: &[f32], b: &[f32], f: F)
