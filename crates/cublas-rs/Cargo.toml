@@ -17,3 +17,4 @@ cublas-l3.workspace = true
 cuda-core.workspace = true
 # Half-precision types appear in haxpy/hgemv signatures on `Handle`.
 half.workspace = true
+tracing.workspace = true

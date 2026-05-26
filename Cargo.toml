@@ -11,6 +11,7 @@ members = [
     "examples/hello",
     "examples/saxpy",
     "examples/sgemm",
+    "examples/mlp",
 ]
 # No `default-members` — `cargo (oxide) run --bin <name>` searches the whole
 # workspace, which is what the example bins need. Bare `cargo build` builds

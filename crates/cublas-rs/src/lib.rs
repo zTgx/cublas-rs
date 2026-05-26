@@ -46,11 +46,14 @@ impl Handle {
     }
 
     /// Initialise on a specific CUDA device.
+    #[tracing::instrument(level = "info", name = "Handle::with_device")]
     pub fn with_device(device_idx: usize) -> Result<Self, DriverError> {
         let ctx = CudaContext::new(device_idx)?;
         let stream = ctx.default_stream();
+        tracing::info!(device_idx, "CUDA context + default stream ready");
         let l1 = cublas_l1::Modules::load(&ctx)?;
         let l3 = cublas_l3::Modules::load(&ctx)?;
+        tracing::info!("Handle ready (L1 + L3 modules loaded)");
         Ok(Self { ctx, stream, l1, l3 })
     }
 
