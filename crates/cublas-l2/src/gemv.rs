@@ -508,38 +508,115 @@ pub fn dgemv(
     Ok(())
 }
 
-// ---- HGEMV (f16) -------------------------------------------------------
-//
-// **Status: stub.** First attempt used the `half::f16::to_f32()` mixed-
-// precision pattern (load f16, widen to f32, accumulate, narrow back).
-// cuda-oxide's codegen rejected it: in release mode the `half` crate
-// routes through host-only x86 SIMD intrinsics
-// (`half::binary16::arch::x86::f16_to_f32_x86_f16c`), and the codegen
-// errors out with:
-//
-//   Translation failed: half::binary16::arch::x86::f16_to_f32_x86_f16c:
-//   Unsupported construct: Struct constant field 0 has unsupported type.
-//
-// This is **not** a documented upstream issue — there's no specific entry
-// in https://github.com/NVlabs/cuda-oxide/issues for it. But the
-// cuda-oxide team's own examples sidestep the `half` crate entirely and
-// do the conversion by hand. See `examples/tcgen05_matmul/src/main.rs`
-// and `examples/gemm_sol/src/main.rs` in that repo for the bf16 form:
-//
-//     fn bf16_to_f32(h: u16) -> f32 { f32::from_bits((h as u32) << 16) }
-//
-// The IEEE-754 f16 ↔ f32 conversion is more involved than bf16 (needs
-// proper exponent rebias + subnormal handling, ~20 lines of bit ops) but
-// is pure arithmetic — no hardware dependency.
-//
-// Path to unstub: rewrite the kernel to take `&[u16]` (raw f16 bits),
-// convert inline via a private `f16_to_f32_bits(h: u16) -> f32` helper,
-// accumulate in f32, write back via `f32_to_f16_bits(v: f32) -> u16`.
-// The host wrapper transmutes between `&[f16]` and `&[u16]`
-// (`half::f16` is `#[repr(transparent)]` over u16, so this is sound).
+// ---- HGEMV (f16 in/out via raw u16, f32 accumulate) -------------------
 
-/// HGEMV — half-precision matrix-vector multiply. Stub (see above).
+#[cuda_module]
+pub mod hgemv_kernels {
+    use super::*;
+
+    // IEEE-754 binary16 → binary32. Subnormals flush to zero.
+    fn f16_to_f32(h: u16) -> f32 {
+        let h = h as u32;
+        let sign = (h & 0x8000) << 16;
+        let exp = (h >> 10) & 0x1f;
+        let mantissa = h & 0x3ff;
+        if exp == 0 {
+            return f32::from_bits(sign);
+        }
+        if exp == 31 {
+            return f32::from_bits(sign | (0xff << 23) | (mantissa << 13));
+        }
+        f32::from_bits(sign | ((exp + 112) << 23) | (mantissa << 13))
+    }
+
+    // IEEE-754 binary32 → binary16. Underflow flushes to zero, overflow
+    // saturates to infinity.
+    fn f32_to_f16(f: f32) -> u16 {
+        let bits = f.to_bits();
+        let sign = ((bits >> 16) & 0x8000) as u16;
+        let exp = ((bits >> 23) & 0xff) as i32;
+        let mantissa = bits & 0x7fffff;
+        if exp == 0xff {
+            let q = if mantissa != 0 { 1 } else { 0 };
+            return sign | 0x7c00 | q;
+        }
+        let new_exp = exp - 127 + 15;
+        if new_exp >= 31 {
+            return sign | 0x7c00;
+        }
+        if new_exp <= 0 {
+            return sign;
+        }
+        sign | ((new_exp as u16) << 10) | ((mantissa >> 13) as u16)
+    }
+
+    #[kernel]
+    pub fn hgemv_n(
+        m: u32,
+        n: u32,
+        alpha: f32,
+        a: &[u16],
+        x: &[u16],
+        beta: f32,
+        mut y: DisjointSlice<u16>,
+    ) {
+        let idx = thread::index_1d();
+        let row = idx.get();
+        if row < m as usize {
+            let n_size = n as usize;
+            let mut sum = 0.0f32;
+            let mut j = 0usize;
+            while j < n_size {
+                sum += f16_to_f32(a[row * n_size + j]) * f16_to_f32(x[j]);
+                j += 1;
+            }
+            if let Some(y_elem) = y.get_mut(idx) {
+                let cur = f16_to_f32(*y_elem);
+                *y_elem = f32_to_f16(alpha * sum + beta * cur);
+            }
+        }
+    }
+
+    #[kernel]
+    pub fn hgemv_t(
+        m: u32,
+        n: u32,
+        alpha: f32,
+        a: &[u16],
+        x: &[u16],
+        beta: f32,
+        mut y: DisjointSlice<u16>,
+    ) {
+        let idx = thread::index_1d();
+        let col = idx.get();
+        if col < n as usize {
+            let n_size = n as usize;
+            let m_size = m as usize;
+            let mut sum = 0.0f32;
+            let mut i = 0usize;
+            while i < m_size {
+                sum += f16_to_f32(a[i * n_size + col]) * f16_to_f32(x[i]);
+                i += 1;
+            }
+            if let Some(y_elem) = y.get_mut(idx) {
+                let cur = f16_to_f32(*y_elem);
+                *y_elem = f32_to_f16(alpha * sum + beta * cur);
+            }
+        }
+    }
+}
+
+/// HGEMV host-slice path. Reinterprets `&[f16]` as `&[u16]` to feed kernels
+/// that do the conversion in bit-arithmetic; `half::f16` is
+/// `#[repr(transparent)]` over `u16`, so the cast is sound.
+#[tracing::instrument(
+    level = "debug",
+    skip(module, stream, a, x, y),
+    fields(op = "hgemv", trans = ?trans, m, n),
+)]
 pub fn hgemv(
+    module: &hgemv_kernels::LoadedModule,
+    stream: &CudaStream,
     trans: Transpose,
     m: usize,
     n: usize,
@@ -549,6 +626,48 @@ pub fn hgemv(
     beta: f16,
     y: &mut [f16],
 ) -> Result<()> {
-    let _ = (trans, m, n, alpha, a, x, beta, y);
-    todo!("HGEMV: implement via raw u16 bit-twiddle (see comment above)")
+    assert_eq!(a.len(), m * n, "A length must equal m*n");
+    let (x_len, y_len) = match trans {
+        Transpose::NoTrans => (n, m),
+        Transpose::Trans => (m, n),
+    };
+    assert!(x.len() >= x_len, "x is shorter than expected");
+    assert!(y.len() >= y_len, "y is shorter than expected");
+    if m == 0 || n == 0 {
+        return Ok(());
+    }
+
+    let a_u16: &[u16] =
+        unsafe { std::slice::from_raw_parts(a.as_ptr().cast::<u16>(), a.len()) };
+    let x_u16: &[u16] =
+        unsafe { std::slice::from_raw_parts(x.as_ptr().cast::<u16>(), x_len) };
+    let y_u16: &[u16] =
+        unsafe { std::slice::from_raw_parts(y.as_ptr().cast::<u16>(), y_len) };
+
+    let a_dev = DeviceBuffer::from_host(stream, a_u16)?;
+    let x_dev = DeviceBuffer::from_host(stream, x_u16)?;
+    let mut y_dev = DeviceBuffer::from_host(stream, y_u16)?;
+
+    let alpha32 = alpha.to_f32();
+    let beta32 = beta.to_f32();
+    match trans {
+        Transpose::NoTrans => {
+            let cfg = LaunchConfig::for_num_elems(m as u32);
+            module.hgemv_n(
+                stream, cfg, m as u32, n as u32, alpha32, &a_dev, &x_dev, beta32, &mut y_dev,
+            )?;
+        }
+        Transpose::Trans => {
+            let cfg = LaunchConfig::for_num_elems(n as u32);
+            module.hgemv_t(
+                stream, cfg, m as u32, n as u32, alpha32, &a_dev, &x_dev, beta32, &mut y_dev,
+            )?;
+        }
+    }
+
+    let result = y_dev.to_host_vec(stream)?;
+    for (i, v) in result.iter().enumerate() {
+        y[i] = f16::from_bits(*v);
+    }
+    Ok(())
 }

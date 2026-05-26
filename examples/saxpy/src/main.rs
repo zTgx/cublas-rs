@@ -128,4 +128,47 @@ fn main() {
     if !n_ok || !t_ok {
         std::process::exit(1);
     }
+
+    // hgemv smoke (f16 in/out, f32 accumulate via bit-twiddle in kernel).
+    use half::f16;
+    let a16: Vec<f16> = (0..M_ROWS * K_COLS)
+        .map(|i| f16::from_f32((i as f32) * 0.01))
+        .collect();
+    let x16: Vec<f16> = (0..K_COLS).map(|i| f16::from_f32((i as f32) * 0.1)).collect();
+    let mut y16 = vec![f16::ZERO; M_ROWS];
+    h.hgemv(
+        Transpose::NoTrans,
+        M_ROWS,
+        K_COLS,
+        f16::from_f32(1.0),
+        &a16,
+        &x16,
+        f16::from_f32(0.0),
+        &mut y16,
+    )
+    .expect("hgemv");
+    // CPU reference using f32.
+    let mut h16_ok = true;
+    let mut h16_max_err = 0.0f32;
+    for i in 0..M_ROWS {
+        let mut expected = 0.0f32;
+        for j in 0..K_COLS {
+            expected += a16[i * K_COLS + j].to_f32() * x16[j].to_f32();
+        }
+        let got = y16[i].to_f32();
+        let err = (got - expected).abs() / expected.abs().max(1e-6);
+        if err > 5e-3 {
+            h16_ok = false;
+        }
+        if err > h16_max_err {
+            h16_max_err = err;
+        }
+    }
+    println!(
+        "L2 hgemv (NoTrans, f16): {} (max rel_err {h16_max_err:.2e})",
+        if h16_ok { "OK" } else { "FAIL" }
+    );
+    if !h16_ok {
+        std::process::exit(1);
+    }
 }

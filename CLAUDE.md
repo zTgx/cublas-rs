@@ -234,7 +234,7 @@ shorthand.
 | L1    | `daxpy/haxpy`                   | `cublas-l1/src/axpy.rs`                       | stub   |
 | L2    | `sgemv` (naive + tiled)         | `cublas-l2/src/gemv.rs`                       | ✓      |
 | L2    | `dgemv`                         | `cublas-l2/src/gemv.rs`                       | ✓      |
-| L2    | `hgemv`                         | `cublas-l2/src/gemv.rs`                       | stub — needs raw-u16 bit-twiddle path (cuda-oxide's own examples use this for bf16; see source comment) |
+| L2    | `hgemv`                         | `cublas-l2/src/gemv.rs`                       | ✓ — raw-u16 in/out, f32 accumulate, IEEE-754 bit-twiddle (subnormals flushed) |
 | L2    | `strsv` (4 variants, seq)       | `cublas-l2/src/trsv.rs`                       | ✓      |
 | L2    | `ssymv` (Upper/Lower)           | `cublas-l2/src/symv.rs`                       | ✓      |
 | L3    | `sgemm_naive` + `sgemm_tiled`   | `cublas-l3/src/sgemm.rs`                      | ✓      |

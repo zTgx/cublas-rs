@@ -322,8 +322,9 @@ impl Handle {
         cublas_l2::dgemv(&self.l2.dgemv, &self.stream, trans, m, n, alpha, a, x, beta, y)
     }
 
-    /// `y := alpha * op(A) * x + beta * y` (f16). Stub — blocked on
-    /// cuda-oxide f16↔f32 conversion support. See `cublas-l2/src/gemv.rs`.
+    /// `y := alpha * op(A) * x + beta * y` (f16 in/out, f32 accumulate).
+    /// Host slices only — `DeviceBuffer<f16>` ↔ raw `u16` interop is awkward;
+    /// the kernel works on raw u16 internally.
     pub fn hgemv(
         &self,
         trans: Transpose,
@@ -335,7 +336,18 @@ impl Handle {
         beta: f16,
         y: &mut [f16],
     ) -> Result<()> {
-        cublas_l2::hgemv(trans, m, n, alpha, a, x, beta, y)
+        cublas_l2::hgemv(
+            &self.l2.hgemv,
+            &self.stream,
+            trans,
+            m,
+            n,
+            alpha,
+            a,
+            x,
+            beta,
+            y,
+        )
     }
 
     /// Solve `op(A) * x = b` in place (`b` overwritten with solution).
