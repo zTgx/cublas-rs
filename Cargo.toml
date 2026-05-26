@@ -8,9 +8,13 @@ members = [
     "crates/cublas-l3",
     "crates/cublas-bench-core",
     "benches",
+    "examples/hello",
+    "examples/saxpy",
+    "examples/sgemm",
 ]
-# `cargo run --example ...` / `cargo build` (no -p) target cublas-rs by default.
-default-members = ["crates/cublas-rs"]
+# No `default-members` — `cargo (oxide) run --bin <name>` searches the whole
+# workspace, which is what the example bins need. Bare `cargo build` builds
+# everything; that's fine for this project.
 
 [workspace.package]
 version = "0.1.0"
@@ -35,3 +39,5 @@ cuda-host = { path = "../cuda-oxide/crates/cuda-host" }
 
 # Third-party
 half = "2.7"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }

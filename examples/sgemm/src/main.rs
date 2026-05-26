@@ -1,11 +1,7 @@
 //! SGEMM end-to-end smoke test (naive variant).
 //!
-//! NOTE: `Handle::sgemm_naive` is currently a `todo!()` stub — this example
-//! will panic at runtime. Compiles successfully so it can serve as the L3
-//! usage template (Handle-style call pattern) until the kernel is filled in.
-//!
 //! Run with:
-//!   cargo oxide run --bin sgemm_basic
+//!   cargo oxide run --bin sgemm
 
 use cublas_rs::{Handle, prelude::*};
 

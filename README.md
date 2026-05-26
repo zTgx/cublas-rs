@@ -47,16 +47,14 @@ that compiles `#[kernel]` Rust to PTX):
 cargo install --git https://github.com/NVlabs/cuda-oxide.git cargo-oxide
 
 # Build + run the toolchain hello-world (works on any CUDA card sm_20+)
-cargo oxide build
-cargo oxide run                     # default-run = hello
-cargo oxide run --bin saxpy         # L1 kernel smoke test
-cargo oxide run --bin sgemm_basic   # L3 (stub — will panic)
+cargo oxide run --bin hello   # pure toolchain check, no BLAS dep
+cargo oxide run --bin saxpy   # L1 smoke test
+cargo oxide run --bin sgemm   # L3 SGEMM (naive)
 ```
 
-Example sources live at the repo root in `examples/`, owned by the facade
-crate via explicit `[[bin]]` entries — cargo-oxide forwards `--bin`, not
-`--example`. `default-members` in the workspace `Cargo.toml` lets these
-commands work from the repo root without `-p cublas-rs`.
+Each example under `examples/` is a standalone crate (its own `Cargo.toml`
++ `README.md`), wired into the workspace so `--bin <name>` finds them. See
+`examples/<name>/README.md` for per-example notes.
 
 For pure type-checking (host crates + IDE), plain cargo works:
 

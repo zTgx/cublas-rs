@@ -33,6 +33,7 @@ pub mod kernels {
 ///
 /// # Panics
 /// If `x.len()` or `y.len()` is less than `n`, or any CUDA call fails.
+#[tracing::instrument(level = "debug", skip(module, stream, x, y), fields(op = "saxpy"))]
 pub fn saxpy(
     module: &kernels::LoadedModule,
     stream: &CudaStream,
@@ -47,19 +48,17 @@ pub fn saxpy(
         return;
     }
 
+    tracing::trace!("H2D x, y");
     let x_dev = DeviceBuffer::from_host(stream, &x[..n]).expect("copy x to device");
     let mut y_dev = DeviceBuffer::from_host(stream, &y[..n]).expect("copy y to device");
 
+    let cfg = LaunchConfig::for_num_elems(n as u32);
+    tracing::trace!(grid = ?cfg.grid_dim, block = ?cfg.block_dim, "launch SAXPY");
     module
-        .saxpy(
-            stream,
-            LaunchConfig::for_num_elems(n as u32),
-            alpha,
-            &x_dev,
-            &mut y_dev,
-        )
+        .saxpy(stream, cfg, alpha, &x_dev, &mut y_dev)
         .expect("SAXPY launch");
 
+    tracing::trace!("D2H y");
     let result = y_dev.to_host_vec(stream).expect("copy y back");
     y[..n].copy_from_slice(&result);
 }

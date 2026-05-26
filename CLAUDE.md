@@ -19,29 +19,31 @@ cublas-rs/
 │   │     ├── hgemm/{half,tensor_core}.rs
 │   │     └── batched/{simple,strided}.rs
 │   └── cublas-rs/            Top-level facade — flat API + level1/level2/level3 namespaces
-├── examples/                 Runnable smoke tests (hello, saxpy, sgemm_basic)
+├── examples/                 Standalone example crates (hello, saxpy, sgemm)
+│   ├── hello/                Pure cuda-oxide smoke test, no BLAS dep
+│   ├── saxpy/                L1 end-to-end via `Handle::saxpy`
+│   └── sgemm/                L3 end-to-end via `Handle::sgemm_naive`
 ├── benches/                  cublas-bench-core based benches
 └── ../cuda-oxide/            (sibling) The codegen + runtime we depend on
 
-Examples sit at the repo root in `examples/`. They are owned by the facade
-crate via explicit `[[bin]]` entries in `crates/cublas-rs/Cargo.toml` with
-`path = "../../examples/<name>.rs"` (and `autoexamples = false`). They're
-declared as bins, not examples, because cargo-oxide's standalone mode only
-forwards `--bin <name>` to the underlying `cargo run`, not `--example`. Run
-them with:
+Each example is a workspace member with its own `Cargo.toml`, `src/main.rs`,
+and `README.md` — mirrors how a downstream user would consume the library.
+Declared as bins (not `[[example]]`) because cargo-oxide's standalone mode
+only forwards `--bin <name>` to the underlying `cargo run`. Run from the
+workspace root:
 
 ```bash
-cargo oxide run                     # default-run = hello (pure toolchain check)
-cargo oxide run --bin saxpy         # L1 kernel exercise
-cargo oxide run --bin sgemm_basic   # L3 kernel exercise (will panic — stub)
+cargo oxide run --bin hello   # toolchain check (works on any CUDA card sm_20+)
+cargo oxide run --bin saxpy   # L1 kernel exercise
+cargo oxide run --bin sgemm   # L3 SGEMM (naive)
 ```
 
-`hello` uses `gpu_printf!` and works on any CUDA card sm_20+. Use it to
-confirm cuda-oxide → PTX → driver → launch is healthy before debugging any
+`hello` uses `gpu_printf!` and has no BLAS dependency. Use it to confirm
+cuda-oxide → PTX → driver → launch is healthy before debugging any
 BLAS-side issue.
 
-`default-members = ["crates/cublas-rs"]` in the workspace `Cargo.toml` makes
-these commands work from the repo root without `-p cublas-rs`.
+The workspace has no `default-members` set on purpose — `cargo run --bin X`
+must search across all members to find bins in the example crates.
 ```
 
 Crate naming follows the BLAS levels (`l1`/`l2`/`l3`). `cublas-core` keeps its

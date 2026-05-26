@@ -27,8 +27,11 @@ pub struct Modules {
 
 impl Modules {
     /// Loads `cublas_l3.ptx` (cwd) and types each kernel view.
+    #[tracing::instrument(level = "debug", skip(ctx))]
     pub fn load(ctx: &Arc<CudaContext>) -> Result<Self, DriverError> {
-        let raw = ctx.load_module_from_file("cublas_l3.ptx")?;
+        let path = "cublas_l3.ptx";
+        tracing::debug!(ptx = path, "loading L3 PTX");
+        let raw = ctx.load_module_from_file(path)?;
         Ok(Self {
             sgemm_naive: sgemm::naive::kernels::from_module(raw)?,
         })

@@ -36,8 +36,11 @@ pub struct Modules {
 impl Modules {
     /// Loads `cublas_l1.ptx` (must be in cwd — that's where cargo-oxide drops
     /// it during `cargo oxide build`) and types each kernel view.
+    #[tracing::instrument(level = "debug", skip(ctx))]
     pub fn load(ctx: &Arc<CudaContext>) -> Result<Self, DriverError> {
-        let raw = ctx.load_module_from_file("cublas_l1.ptx")?;
+        let path = "cublas_l1.ptx";
+        tracing::debug!(ptx = path, "loading L1 PTX");
+        let raw = ctx.load_module_from_file(path)?;
         Ok(Self {
             saxpy: saxpy::kernels::from_module(raw)?,
         })

@@ -51,6 +51,11 @@ pub mod kernels {
 const BLOCK_SIZE: u32 = 16;
 
 /// Internal launcher. End users go through `cublas_rs::Handle::sgemm_naive`.
+#[tracing::instrument(
+    level = "debug",
+    skip(module, stream, config, a, b, c),
+    fields(op = "sgemm_naive", m = config.m, n = config.n, k = config.k),
+)]
 pub fn sgemm_naive(
     module: &kernels::LoadedModule,
     stream: &CudaStream,
@@ -70,6 +75,7 @@ pub fn sgemm_naive(
     assert_eq!(b.len(), k * n, "B length must equal k*n");
     assert_eq!(c.len(), m * n, "C length must equal m*n");
 
+    tracing::trace!("H2D A, B, C");
     let a_dev = DeviceBuffer::from_host(stream, a).expect("copy A to device");
     let b_dev = DeviceBuffer::from_host(stream, b).expect("copy B to device");
     let mut c_dev = DeviceBuffer::from_host(stream, c).expect("copy C to device");
@@ -81,6 +87,7 @@ pub fn sgemm_naive(
         block_dim: (BLOCK_SIZE, BLOCK_SIZE, 1),
         shared_mem_bytes: 0,
     };
+    tracing::trace!(grid = ?cfg.grid_dim, block = ?cfg.block_dim, "launch SGEMM naive");
 
     module
         .sgemm_naive(
@@ -97,6 +104,7 @@ pub fn sgemm_naive(
         )
         .expect("SGEMM naive launch");
 
+    tracing::trace!("D2H C");
     let result = c_dev.to_host_vec(stream).expect("copy C back");
     c.copy_from_slice(&result);
 }

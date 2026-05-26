@@ -1,0 +1,16 @@
+[package]
+name = "hello"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+# Pure cuda-oxide example — doesn't touch cublas-rs. Use it to verify the
+# toolchain (codegen backend, PTX, driver, launch) works on your machine
+# before debugging anything BLAS-side. `cuda-host` is needed because the
+# `#[cuda_module]` proc macro expands to code that references it.
+cuda-core.workspace = true
+cuda-device.workspace = true
+cuda-host.workspace = true
