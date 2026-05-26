@@ -29,7 +29,9 @@ pub use sgemm::{sgemm_double_buf, sgemm_naive, sgemm_tiled, sgemm_vectorized};
 // Device-buffer primary path.
 pub use batched::strided_batched_sgemm_dev;
 pub use dgemm::{dgemm_naive_dev, dgemm_tiled_dev};
-pub use sgemm::{sgemm_naive_dev, sgemm_tiled_dev};
+pub use sgemm::{
+    sgemm_double_buf_dev, sgemm_naive_dev, sgemm_tiled_dev, sgemm_vectorized_dev,
+};
 
 /// All L3 kernel modules, typed and ready to launch. Built once by
 /// `cublas_rs::Handle::new()`.

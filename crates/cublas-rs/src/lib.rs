@@ -463,26 +463,48 @@ impl Handle {
         cublas_l3::sgemm_tiled(&self.l3.sgemm, &self.stream, config, a, b, c)
     }
 
+    /// SGEMM with thread coarsening (4 outputs/thread). Device buffers.
     pub fn sgemm_vectorized(
         &self,
         config: &GemmConfig<f32>,
-        a: &[f32],
-        b: &[f32],
-        c: &mut [f32],
+        a: &DeviceBuffer<f32>,
+        b: &DeviceBuffer<f32>,
+        c: &mut DeviceBuffer<f32>,
     ) -> Result<()> {
-        let _ = (config, a, b, c);
-        todo!("vectorized SGEMM kernel not yet implemented");
+        cublas_l3::sgemm_vectorized_dev(&self.l3.sgemm, &self.stream, config, a, b, c)
     }
 
-    pub fn sgemm_double_buf(
+    /// SGEMM with thread coarsening (host slices).
+    pub fn sgemm_vectorized_simple(
         &self,
         config: &GemmConfig<f32>,
         a: &[f32],
         b: &[f32],
         c: &mut [f32],
     ) -> Result<()> {
-        let _ = (config, a, b, c);
-        todo!("double-buffered SGEMM kernel not yet implemented");
+        cublas_l3::sgemm_vectorized(&self.l3.sgemm, &self.stream, config, a, b, c)
+    }
+
+    /// SGEMM with double-buffered shared-memory loads. Device buffers.
+    pub fn sgemm_double_buf(
+        &self,
+        config: &GemmConfig<f32>,
+        a: &DeviceBuffer<f32>,
+        b: &DeviceBuffer<f32>,
+        c: &mut DeviceBuffer<f32>,
+    ) -> Result<()> {
+        cublas_l3::sgemm_double_buf_dev(&self.l3.sgemm, &self.stream, config, a, b, c)
+    }
+
+    /// SGEMM with double-buffered loads (host slices).
+    pub fn sgemm_double_buf_simple(
+        &self,
+        config: &GemmConfig<f32>,
+        a: &[f32],
+        b: &[f32],
+        c: &mut [f32],
+    ) -> Result<()> {
+        cublas_l3::sgemm_double_buf(&self.l3.sgemm, &self.stream, config, a, b, c)
     }
 
     /// `C := alpha * A * B + beta * C` (f64, naive, device buffers).

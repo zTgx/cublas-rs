@@ -8,8 +8,7 @@ Pedagogical / research-grade. Target hardware: **NVIDIA Ampere (sm_80 / sm_86)**
 ```
 cublas-rs/
 ├── crates/
-│   ├── cublas-core/          Host-only: GemmConfig, BlasScalar, MatrixLayout, Transpose
-│   ├── cublas-bench-core/    GpuTimer + CPU reference validator
+│   ├── cublas-core/          Host-only: GemmConfig, BlasScalar, MatrixLayout, Transpose, CublasError
 │   ├── cublas-l1/            BLAS Level 1 — saxpy, scal, copy, axpy, dot, nrm2, asum, iamax
 │   ├── cublas-l2/            BLAS Level 2 — gemv, trsv, symv
 │   ├── cublas-l3/            BLAS Level 3 — one flat file per precision family
@@ -22,7 +21,7 @@ cublas-rs/
 │   ├── sgemm/                L3 perf compare: naive vs tiled, f32 + f64
 │   ├── mlp/                  Realistic L1 + L3 inference loop (device-resident weights)
 │   └── linreg/               L2-heavy GD demo + strsv/ssymv smoke
-├── benches/                  cublas-bench-core based benches
+├── benches/                  Workspace member, self-contained: bench harnesses + GpuTimer + validators
 └── ../cuda-oxide/            (sibling) The codegen + runtime we depend on
 
 Each example is a workspace member with its own `Cargo.toml`, `src/main.rs`,
@@ -69,7 +68,7 @@ Run `cargo oxide doctor` to validate.
 | Crate                | Tool             | Reason                                   |
 |----------------------|------------------|------------------------------------------|
 | `cublas-core`        | `cargo build`    | Pure host types, no CUDA                 |
-| `cublas-bench-core`  | `cargo build`    | Host-side timing wrappers                |
+| `benches`            | `cargo build`    | Bench harness + GpuTimer + validators    |
 | `cublas-l1`          | `cargo oxide`    | Contains `#[cuda_module]` kernels        |
 | `cublas-l2`          | `cargo oxide`    | Contains `#[cuda_module]` kernels        |
 | `cublas-l3`          | `cargo oxide`    | Contains `#[cuda_module]` kernels        |
@@ -237,16 +236,15 @@ shorthand.
 | L2    | `hgemv`                         | `cublas-l2/src/gemv.rs`                       | ✓ — raw-u16 in/out, f32 accumulate, IEEE-754 bit-twiddle (subnormals flushed) |
 | L2    | `strsv` (4 variants, seq)       | `cublas-l2/src/trsv.rs`                       | ✓      |
 | L2    | `ssymv` (Upper/Lower)           | `cublas-l2/src/symv.rs`                       | ✓      |
-| L3    | `sgemm_naive` + `sgemm_tiled`   | `cublas-l3/src/sgemm.rs`                      | ✓      |
-| L3    | `sgemm_vectorized/double_buf`   | `cublas-l3/src/sgemm.rs`                      | stub   |
+| L3    | `sgemm_*` (naive/tiled/vectorized/double_buf) | `cublas-l3/src/sgemm.rs`        | ✓      |
 | L3    | `dgemm_naive` + `dgemm_tiled`   | `cublas-l3/src/dgemm.rs`                      | ✓      |
 | L3    | `dgemm_vectorized/double_buf`   | `cublas-l3/src/dgemm.rs`                      | stub   |
 | L3    | `hgemm_half`                    | `cublas-l3/src/hgemm.rs`                      | stub   |
 | L3    | `hgemm_tensor_core`             | `cublas-l3/src/hgemm.rs`                      | blocked — WMMA wrapper missing |
 | L3    | `strided_batched_sgemm`         | `cublas-l3/src/batched.rs`                    | ✓ — 3D grid, blockIdx.z = batch, 16×16 tile per block |
 | L3    | `batched_sgemm`                 | `cublas-l3/src/batched.rs`                    | ✓ — host concat + delegate to strided         |
-| —     | `GpuTimer`                      | `cublas-bench-core/src/timer.rs`              | stub   |
-| —     | `validate_gemm`                 | `cublas-bench-core/src/validator.rs`          | stub   |
+| —     | `GpuTimer`                      | `benches/src/timer.rs`                        | stub   |
+| —     | `validate_gemm`                 | `benches/src/validator.rs`                    | stub   |
 
 ## Reference paths in `../cuda-oxide`
 

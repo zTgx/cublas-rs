@@ -35,6 +35,12 @@ fn main() {
     run_variant("tiled", &h, &config, &a, &b, |h, cfg, a, b, c| {
         h.sgemm_tiled_simple(cfg, a, b, c)
     });
+    run_variant("vector", &h, &config, &a, &b, |h, cfg, a, b, c| {
+        h.sgemm_vectorized_simple(cfg, a, b, c)
+    });
+    run_variant("dblbuf", &h, &config, &a, &b, |h, cfg, a, b, c| {
+        h.sgemm_double_buf_simple(cfg, a, b, c)
+    });
 
     // Same drill in f64. Pascal cuts FP64 to ~1/32 of FP32, so expect this to
     // be a lot slower — that's hardware, not the kernel.

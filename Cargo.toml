@@ -6,7 +6,6 @@ members = [
     "crates/cublas-l1",
     "crates/cublas-l2",
     "crates/cublas-l3",
-    "crates/cublas-bench-core",
     "benches",
     "examples/hello",
     "examples/saxpy",
@@ -32,7 +31,6 @@ cublas-core = { version = "0.1.0", path = "crates/cublas-core" }
 cublas-l1 = { version = "0.1.0", path = "crates/cublas-l1" }
 cublas-l2 = { version = "0.1.0", path = "crates/cublas-l2" }
 cublas-l3 = { version = "0.1.0", path = "crates/cublas-l3" }
-cublas-bench-core = { version = "0.1.0", path = "crates/cublas-bench-core" }
 
 # cuda-oxide local checkout (../cuda-oxide). Switch to git deps when releasing.
 cuda-core = { path = "../cuda-oxide/crates/cuda-core" }

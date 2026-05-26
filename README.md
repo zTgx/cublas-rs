@@ -10,7 +10,7 @@ Targets NVIDIA Ampere (sm_80 / sm_86).
 - **Level 3** (`cublas-l3`) — `sgemm` / `dgemm` / `hgemm` with progressive variants
   (naive, tiled shared-memory, vectorized, double-buffered), plus batched and
   strided-batched GEMM
-- **Bench / validation** — `GpuTimer` + CPU reference checker in `cublas-bench-core`
+- **Bench / validation** — `GpuTimer` + CPU reference checker in `benches/`
 
 See [`CLAUDE.md`](./CLAUDE.md) for architecture, build instructions, and the
 implementation status table.
