@@ -12,17 +12,16 @@ cublas-rs/
 │   ├── cublas-bench-core/    GpuTimer + CPU reference validator
 │   ├── cublas-l1/            BLAS Level 1 — saxpy, scal, copy, axpy, dot, nrm2, asum, iamax
 │   ├── cublas-l2/            BLAS Level 2 — gemv, trsv, symv
-│   ├── cublas-l3/            BLAS Level 3 — sgemm/dgemm/hgemm/batched (organised internally
-│   │   src/                  by precision family with implementation variants)
-│   │     ├── sgemm/{naive,tiled,vectorized,double_buf}.rs
-│   │     ├── dgemm/{naive,tiled,vectorized,double_buf}.rs
-│   │     ├── hgemm/{half,tensor_core}.rs
-│   │     └── batched/{simple,strided}.rs
-│   └── cublas-rs/            Top-level facade — flat API + level1/level2/level3 namespaces
-├── examples/                 Standalone example crates (hello, saxpy, sgemm)
+│   ├── cublas-l3/            BLAS Level 3 — one flat file per precision family
+│   │   src/                    sgemm.rs / dgemm.rs / hgemm.rs / batched.rs
+│   │                          (matches the L1 / L2 layout)
+│   └── cublas-rs/            Top-level facade — `Handle` API surface
+├── examples/                 Standalone example crates
 │   ├── hello/                Pure cuda-oxide smoke test, no BLAS dep
-│   ├── saxpy/                L1 end-to-end via `Handle::saxpy`
-│   └── sgemm/                L3 end-to-end via `Handle::sgemm_naive`
+│   ├── saxpy/                L1 end-to-end + reduction smoke + L2 sgemv smoke
+│   ├── sgemm/                L3 perf compare: naive vs tiled, f32 + f64
+│   ├── mlp/                  Realistic L1 + L3 inference loop (device-resident weights)
+│   └── linreg/               L2-heavy GD demo + strsv/ssymv smoke
 ├── benches/                  cublas-bench-core based benches
 └── ../cuda-oxide/            (sibling) The codegen + runtime we depend on
 
@@ -234,20 +233,18 @@ shorthand.
 | L1    | `isamax`                        | `cublas-l1/src/iamax.rs`                      | ✓      |
 | L1    | `daxpy/haxpy`                   | `cublas-l1/src/axpy.rs`                       | stub   |
 | L2    | `sgemv` (naive + tiled)         | `cublas-l2/src/gemv.rs`                       | ✓      |
-| L2    | `dgemv/hgemv`                   | `cublas-l2/src/gemv.rs`                       | stub   |
+| L2    | `dgemv`                         | `cublas-l2/src/gemv.rs`                       | ✓      |
+| L2    | `hgemv`                         | `cublas-l2/src/gemv.rs`                       | stub — needs raw-u16 bit-twiddle path (cuda-oxide's own examples use this for bf16; see source comment) |
 | L2    | `strsv` (4 variants, seq)       | `cublas-l2/src/trsv.rs`                       | ✓      |
 | L2    | `ssymv` (Upper/Lower)           | `cublas-l2/src/symv.rs`                       | ✓      |
-| L3    | `sgemm_naive`                   | `cublas-l3/src/sgemm/naive.rs`                | ✓      |
-| L3    | `sgemm_tiled`                   | `cublas-l3/src/sgemm/tiled.rs`                | ✓      |
-| L3    | `sgemm_vectorized`              | `cublas-l3/src/sgemm/vectorized.rs`           | stub   |
-| L3    | `sgemm_double_buf`              | `cublas-l3/src/sgemm/double_buf.rs`           | stub   |
-| L3    | `dgemm_naive`                   | `cublas-l3/src/dgemm/naive.rs`                | ✓      |
-| L3    | `dgemm_tiled`                   | `cublas-l3/src/dgemm/tiled.rs`                | ✓      |
-| L3    | `dgemm_vectorized/double_buf`   | `cublas-l3/src/dgemm/*.rs`                    | stub   |
-| L3    | `hgemm_half`                    | `cublas-l3/src/hgemm/half.rs`                 | stub   |
-| L3    | `hgemm_tensor_core`             | `cublas-l3/src/hgemm/tensor_core.rs`          | blocked — WMMA wrapper missing |
-| L3    | `batched_sgemm`                 | `cublas-l3/src/batched/simple.rs`             | stub   |
-| L3    | `strided_batched_sgemm`         | `cublas-l3/src/batched/strided.rs`            | stub   |
+| L3    | `sgemm_naive` + `sgemm_tiled`   | `cublas-l3/src/sgemm.rs`                      | ✓      |
+| L3    | `sgemm_vectorized/double_buf`   | `cublas-l3/src/sgemm.rs`                      | stub   |
+| L3    | `dgemm_naive` + `dgemm_tiled`   | `cublas-l3/src/dgemm.rs`                      | ✓      |
+| L3    | `dgemm_vectorized/double_buf`   | `cublas-l3/src/dgemm.rs`                      | stub   |
+| L3    | `hgemm_half`                    | `cublas-l3/src/hgemm.rs`                      | stub   |
+| L3    | `hgemm_tensor_core`             | `cublas-l3/src/hgemm.rs`                      | blocked — WMMA wrapper missing |
+| L3    | `batched_sgemm`                 | `cublas-l3/src/batched.rs`                    | stub   |
+| L3    | `strided_batched_sgemm`         | `cublas-l3/src/batched.rs`                    | stub   |
 | —     | `GpuTimer`                      | `cublas-bench-core/src/timer.rs`              | stub   |
 | —     | `validate_gemm`                 | `cublas-bench-core/src/validator.rs`          | stub   |
 

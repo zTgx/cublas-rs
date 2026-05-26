@@ -322,23 +322,9 @@ impl Handle {
         cublas_l2::dgemv(&self.l2.dgemv, &self.stream, trans, m, n, alpha, a, x, beta, y)
     }
 
-    /// `y := alpha * op(A) * x + beta * y` (f16 in/out, f32 accumulate, device buffers).
+    /// `y := alpha * op(A) * x + beta * y` (f16). Stub — blocked on
+    /// cuda-oxide f16↔f32 conversion support. See `cublas-l2/src/gemv.rs`.
     pub fn hgemv(
-        &self,
-        trans: Transpose,
-        m: usize,
-        n: usize,
-        alpha: f16,
-        a: &DeviceBuffer<f16>,
-        x: &DeviceBuffer<f16>,
-        beta: f16,
-        y: &mut DeviceBuffer<f16>,
-    ) -> Result<()> {
-        cublas_l2::hgemv_dev(&self.l2.hgemv, &self.stream, trans, m, n, alpha, a, x, beta, y)
-    }
-
-    /// `y := alpha * op(A) * x + beta * y` (f16, host slices).
-    pub fn hgemv_simple(
         &self,
         trans: Transpose,
         m: usize,
@@ -349,7 +335,7 @@ impl Handle {
         beta: f16,
         y: &mut [f16],
     ) -> Result<()> {
-        cublas_l2::hgemv(&self.l2.hgemv, &self.stream, trans, m, n, alpha, a, x, beta, y)
+        cublas_l2::hgemv(trans, m, n, alpha, a, x, beta, y)
     }
 
     /// Solve `op(A) * x = b` in place (`b` overwritten with solution).
@@ -429,7 +415,7 @@ impl Handle {
         b: &DeviceBuffer<f32>,
         c: &mut DeviceBuffer<f32>,
     ) -> Result<()> {
-        cublas_l3::sgemm_naive_dev(&self.l3.sgemm_naive, &self.stream, config, a, b, c)
+        cublas_l3::sgemm_naive_dev(&self.l3.sgemm, &self.stream, config, a, b, c)
     }
 
     /// `C := alpha * A * B + beta * C` (f32, naive, host slices).
@@ -440,7 +426,7 @@ impl Handle {
         b: &[f32],
         c: &mut [f32],
     ) -> Result<()> {
-        cublas_l3::sgemm_naive(&self.l3.sgemm_naive, &self.stream, config, a, b, c)
+        cublas_l3::sgemm_naive(&self.l3.sgemm, &self.stream, config, a, b, c)
     }
 
     /// `C := alpha * A * B + beta * C` (f32, shared-memory tiled, device buffers).
@@ -451,7 +437,7 @@ impl Handle {
         b: &DeviceBuffer<f32>,
         c: &mut DeviceBuffer<f32>,
     ) -> Result<()> {
-        cublas_l3::sgemm_tiled_dev(&self.l3.sgemm_tiled, &self.stream, config, a, b, c)
+        cublas_l3::sgemm_tiled_dev(&self.l3.sgemm, &self.stream, config, a, b, c)
     }
 
     /// `C := alpha * A * B + beta * C` (f32, shared-memory tiled, host slices).
@@ -462,7 +448,7 @@ impl Handle {
         b: &[f32],
         c: &mut [f32],
     ) -> Result<()> {
-        cublas_l3::sgemm_tiled(&self.l3.sgemm_tiled, &self.stream, config, a, b, c)
+        cublas_l3::sgemm_tiled(&self.l3.sgemm, &self.stream, config, a, b, c)
     }
 
     pub fn sgemm_vectorized(
@@ -495,7 +481,7 @@ impl Handle {
         b: &DeviceBuffer<f64>,
         c: &mut DeviceBuffer<f64>,
     ) -> Result<()> {
-        cublas_l3::dgemm_naive_dev(&self.l3.dgemm_naive, &self.stream, config, a, b, c)
+        cublas_l3::dgemm_naive_dev(&self.l3.dgemm, &self.stream, config, a, b, c)
     }
 
     /// `C := alpha * A * B + beta * C` (f64, naive, host slices).
@@ -506,7 +492,7 @@ impl Handle {
         b: &[f64],
         c: &mut [f64],
     ) -> Result<()> {
-        cublas_l3::dgemm_naive(&self.l3.dgemm_naive, &self.stream, config, a, b, c)
+        cublas_l3::dgemm_naive(&self.l3.dgemm, &self.stream, config, a, b, c)
     }
 
     /// `C := alpha * A * B + beta * C` (f64, shared-mem tiled, device buffers).
@@ -517,7 +503,7 @@ impl Handle {
         b: &DeviceBuffer<f64>,
         c: &mut DeviceBuffer<f64>,
     ) -> Result<()> {
-        cublas_l3::dgemm_tiled_dev(&self.l3.dgemm_tiled, &self.stream, config, a, b, c)
+        cublas_l3::dgemm_tiled_dev(&self.l3.dgemm, &self.stream, config, a, b, c)
     }
 
     /// `C := alpha * A * B + beta * C` (f64, shared-mem tiled, host slices).
@@ -528,7 +514,7 @@ impl Handle {
         b: &[f64],
         c: &mut [f64],
     ) -> Result<()> {
-        cublas_l3::dgemm_tiled(&self.l3.dgemm_tiled, &self.stream, config, a, b, c)
+        cublas_l3::dgemm_tiled(&self.l3.dgemm, &self.stream, config, a, b, c)
     }
 
     pub fn dgemm_vectorized(

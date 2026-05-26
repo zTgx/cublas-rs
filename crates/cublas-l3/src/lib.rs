@@ -1,7 +1,12 @@
 //! BLAS Level 3 — matrix-matrix kernels (plus batched extensions).
 //!
-//! Organised by precision family, each with its own progression of
-//! implementation variants (`naive` → `tiled` → `vectorized` → `double_buf`).
+//! Each precision family lives in one flat file:
+//!   - `sgemm.rs` — f32, four variants (naive + tiled implemented; vectorized
+//!     and double_buf still stubs)
+//!   - `dgemm.rs` — f64, same shape
+//!   - `hgemm.rs` — f16 (stub for now)
+//!   - `batched.rs` — batched / strided-batched (stubs)
+//!
 //! End users call through `cublas_rs::Handle`; the free fns and `Modules`
 //! below are internal wiring.
 
@@ -28,10 +33,8 @@ pub use sgemm::{sgemm_naive_dev, sgemm_tiled_dev};
 /// All L3 kernel modules, typed and ready to launch. Built once by
 /// `cublas_rs::Handle::new()`.
 pub struct Modules {
-    pub sgemm_naive: sgemm::naive::kernels::LoadedModule,
-    pub sgemm_tiled: sgemm::tiled::kernels::LoadedModule,
-    pub dgemm_naive: dgemm::naive::kernels::LoadedModule,
-    pub dgemm_tiled: dgemm::tiled::kernels::LoadedModule,
+    pub sgemm: sgemm::kernels::LoadedModule,
+    pub dgemm: dgemm::kernels::LoadedModule,
 }
 
 impl Modules {
@@ -43,10 +46,8 @@ impl Modules {
         tracing::debug!(ptx = path, "loading L3 PTX");
         let raw = ctx.load_module_from_file(path)?;
         Ok(Self {
-            sgemm_naive: sgemm::naive::kernels::from_module(raw.clone())?,
-            sgemm_tiled: sgemm::tiled::kernels::from_module(raw.clone())?,
-            dgemm_naive: dgemm::naive::kernels::from_module(raw.clone())?,
-            dgemm_tiled: dgemm::tiled::kernels::from_module(raw)?,
+            sgemm: sgemm::kernels::from_module(raw.clone())?,
+            dgemm: dgemm::kernels::from_module(raw)?,
         })
     }
 }
