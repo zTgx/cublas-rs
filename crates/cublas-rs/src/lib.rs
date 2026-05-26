@@ -292,7 +292,23 @@ impl Handle {
         )
     }
 
+    /// `y := alpha * op(A) * x + beta * y` (f64, device buffers).
     pub fn dgemv(
+        &self,
+        trans: Transpose,
+        m: usize,
+        n: usize,
+        alpha: f64,
+        a: &DeviceBuffer<f64>,
+        x: &DeviceBuffer<f64>,
+        beta: f64,
+        y: &mut DeviceBuffer<f64>,
+    ) -> Result<()> {
+        cublas_l2::dgemv_dev(&self.l2.dgemv, &self.stream, trans, m, n, alpha, a, x, beta, y)
+    }
+
+    /// `y := alpha * op(A) * x + beta * y` (f64, host slices).
+    pub fn dgemv_simple(
         &self,
         trans: Transpose,
         m: usize,
@@ -303,11 +319,26 @@ impl Handle {
         beta: f64,
         y: &mut [f64],
     ) -> Result<()> {
-        let _ = (trans, m, n, alpha, a, x, beta, y);
-        todo!("DGEMV kernel not yet implemented");
+        cublas_l2::dgemv(&self.l2.dgemv, &self.stream, trans, m, n, alpha, a, x, beta, y)
     }
 
+    /// `y := alpha * op(A) * x + beta * y` (f16 in/out, f32 accumulate, device buffers).
     pub fn hgemv(
+        &self,
+        trans: Transpose,
+        m: usize,
+        n: usize,
+        alpha: f16,
+        a: &DeviceBuffer<f16>,
+        x: &DeviceBuffer<f16>,
+        beta: f16,
+        y: &mut DeviceBuffer<f16>,
+    ) -> Result<()> {
+        cublas_l2::hgemv_dev(&self.l2.hgemv, &self.stream, trans, m, n, alpha, a, x, beta, y)
+    }
+
+    /// `y := alpha * op(A) * x + beta * y` (f16, host slices).
+    pub fn hgemv_simple(
         &self,
         trans: Transpose,
         m: usize,
@@ -318,8 +349,7 @@ impl Handle {
         beta: f16,
         y: &mut [f16],
     ) -> Result<()> {
-        let _ = (trans, m, n, alpha, a, x, beta, y);
-        todo!("HGEMV kernel not yet implemented");
+        cublas_l2::hgemv(&self.l2.hgemv, &self.stream, trans, m, n, alpha, a, x, beta, y)
     }
 
     /// Solve `op(A) * x = b` in place (`b` overwritten with solution).

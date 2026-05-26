@@ -19,13 +19,15 @@ pub use symv::ssymv;
 pub use trsv::strsv;
 
 // Device-buffer primary path.
-pub use gemv::{sgemv_dev, sgemv_tiled_dev};
+pub use gemv::{dgemv_dev, hgemv_dev, sgemv_dev, sgemv_tiled_dev};
 pub use symv::ssymv_dev;
 pub use trsv::strsv_dev;
 
 /// All L2 kernel modules, typed and ready to launch.
 pub struct Modules {
     pub gemv: gemv::kernels::LoadedModule,
+    pub dgemv: gemv::dgemv_kernels::LoadedModule,
+    pub hgemv: gemv::hgemv_kernels::LoadedModule,
     pub symv: symv::kernels::LoadedModule,
     pub trsv: trsv::kernels::LoadedModule,
 }
@@ -40,6 +42,8 @@ impl Modules {
         let raw = ctx.load_module_from_file(path)?;
         Ok(Self {
             gemv: gemv::kernels::from_module(raw.clone())?,
+            dgemv: gemv::dgemv_kernels::from_module(raw.clone())?,
+            hgemv: gemv::hgemv_kernels::from_module(raw.clone())?,
             symv: symv::kernels::from_module(raw.clone())?,
             trsv: trsv::kernels::from_module(raw)?,
         })
