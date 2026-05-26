@@ -4,11 +4,11 @@
 // (only WGMMA for Hopper and tcgen05 for Blackwell are wrapped). Implement
 // when those intrinsics land, or fork dialect-nvvm locally.
 
-use cublas_core::GemmConfig;
+use cublas_core::{GemmConfig, Result};
 use half::f16;
 
 /// Tensor Core HGEMM kernel launch (f16, sm_80+).
-pub fn hgemm_tensor_core(config: &GemmConfig<f16>, a: &[f16], b: &[f16], c: &mut [f16]) {
+pub fn hgemm_tensor_core(config: &GemmConfig<f16>, a: &[f16], b: &[f16], c: &mut [f16]) -> Result<()> {
     let _ = (config, a, b, c);
     todo!("blocked on WMMA wrapper in cuda-oxide")
 }

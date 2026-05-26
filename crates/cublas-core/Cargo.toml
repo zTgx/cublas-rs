@@ -9,3 +9,5 @@ repository.workspace = true
 
 [dependencies]
 half.workspace = true
+cuda-core.workspace = true
+thiserror.workspace = true

@@ -2,7 +2,7 @@
 //
 // A is m x n (row-major). x is length n. y is length m.
 
-use cublas_core::Transpose;
+use cublas_core::{Result, Transpose};
 use half::f16;
 
 /// SGEMV — single-precision matrix-vector multiply.
@@ -17,7 +17,7 @@ pub fn sgemv(
     x: &[f32],
     beta: f32,
     y: &mut [f32],
-) {
+) -> Result<()> {
     let _ = (trans, m, n, alpha, a, x, beta, y);
     todo!("launch SGEMV kernel")
 }
@@ -32,7 +32,7 @@ pub fn dgemv(
     x: &[f64],
     beta: f64,
     y: &mut [f64],
-) {
+) -> Result<()> {
     let _ = (trans, m, n, alpha, a, x, beta, y);
     todo!("launch DGEMV kernel")
 }
@@ -47,7 +47,7 @@ pub fn hgemv(
     x: &[f16],
     beta: f16,
     y: &mut [f16],
-) {
+) -> Result<()> {
     let _ = (trans, m, n, alpha, a, x, beta, y);
     todo!("launch HGEMV kernel")
 }

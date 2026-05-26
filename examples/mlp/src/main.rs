@@ -1,16 +1,10 @@
-//! 2-layer MLP forward-pass inference loop — mirrors how production code
-//! actually drives cuBLAS:
+//! 2-layer MLP forward-pass inference loop — the realistic cuBLAS calling
+//! pattern: build one `Handle`, upload all weights ONCE to GPU memory, then
+//! run thousands of forwards that only touch the device buffers.
 //!
-//!   1. Build one `Handle` at startup (= `cublasCreate`), reuse it forever.
-//!   2. Pre-allocate input / weight / output host buffers.
-//!   3. Warmup (PTX JIT + caches).
-//!   4. Run N forward passes in a tight loop, time the steady-state phase.
-//!   5. Report ms/iter + samples/s.
-//!
-//! The hot path is two `sgemm_naive` calls (X @ W1 → Z1, Z1 @ W2 → Z2) plus
-//! a `saxpy` for the bias term on the first layer. The activation /
-//! second-layer-bias / softmax steps are flagged `todo!()` style — drop
-//! them in once `cublas-l1::sscal`-family ops and elementwise kernels land.
+//! Hot path uses `Handle::sgemm_tiled` (shared-memory tiled) + `Handle::saxpy`
+//! for the bias-broadcast trick. ReLU / second-layer bias / softmax are
+//! flagged `// TODO` until the matching ops land.
 //!
 //! Run with:
 //!   cargo oxide run --bin mlp                          # info-level logs
@@ -19,22 +13,18 @@
 
 use std::time::Instant;
 
-use cublas_rs::{Handle, prelude::*};
+use cublas_rs::{DeviceBuf, Handle, prelude::*};
 use tracing_subscriber::EnvFilter;
 
-// Network shape — small enough that a CPU can sanity-check, large enough
-// that the GPU work dominates host-side overhead.
 const BATCH: usize = 128;
-const IN_FEATURES: usize = 784; // e.g. flattened MNIST
+const IN_FEATURES: usize = 784;
 const HIDDEN: usize = 256;
 const OUT_FEATURES: usize = 10;
 
 const WARMUP_ITERS: usize = 5;
 const TIMED_ITERS: usize = 50;
 
-fn main() {
-    // Standard `tracing-subscriber` setup: honour `RUST_LOG`, default to
-    // info-level for cublas_rs + this bin.
+fn main() -> Result<()> {
     tracing_subscriber::fmt()
         .with_env_filter(
             EnvFilter::try_from_default_env()
@@ -50,68 +40,94 @@ fn main() {
         "starting MLP inference benchmark"
     );
 
-    // ── Step 1: handle (= `cublasHandle_t`). Build once, share everywhere.
-    let h = Handle::new().expect("Handle::new — CUDA + PTX files reachable from cwd?");
+    // One handle for the entire program — exactly like cublasCreate.
+    let h = Handle::new()?;
 
-    // ── Step 2: model weights (pretend we loaded these from disk).
+    // Pretend these came off disk. They never get re-uploaded inside the
+    // forward loop — that's the whole point of device-resident weights.
     let w1 = init_weights(IN_FEATURES, HIDDEN, 0.01);
     let b1 = init_bias(HIDDEN, 0.1);
     let w2 = init_weights(HIDDEN, OUT_FEATURES, 0.01);
-
-    // ── Step 3: input batch + scratch buffers.
     let x = init_input(BATCH, IN_FEATURES);
-    let mut z1 = vec![0.0f32; BATCH * HIDDEN];
-    let mut z2 = vec![0.0f32; BATCH * OUT_FEATURES];
-    // Pre-broadcast b1 so we can apply it with one saxpy on Z1. (In real
-    // code you'd use a fused bias-add kernel; broadcasting here keeps the
-    // example self-contained.)
     let b1_broadcast = broadcast_bias(&b1, BATCH);
 
-    // ── Step 4: warmup.
+    // ── One-shot uploads. After this, the GPU owns everything. ────────────
+    let w1_dev = h.upload(&w1)?;
+    let w2_dev = h.upload(&w2)?;
+    let b1_broadcast_dev = h.upload(&b1_broadcast)?;
+    let x_dev = h.upload(&x)?;
+    // Scratch buffers — zero-initialised on the device, never round-trip.
+    let mut z1_dev = DeviceBuf::<f32>::zeroed(h.stream(), BATCH * HIDDEN)?;
+    let mut z2_dev = DeviceBuf::<f32>::zeroed(h.stream(), BATCH * OUT_FEATURES)?;
+
     tracing::info!(iters = WARMUP_ITERS, "warmup");
     for _ in 0..WARMUP_ITERS {
-        forward(&h, &x, &w1, &b1_broadcast, &w2, &mut z1, &mut z2);
+        forward(
+            &h,
+            &x_dev,
+            &w1_dev,
+            &b1_broadcast_dev,
+            &w2_dev,
+            &mut z1_dev,
+            &mut z2_dev,
+        )?;
     }
+    // Drain the warmup launches before starting the clock — otherwise their
+    // queued work bleeds into the timed window.
+    h.synchronize()?;
 
-    // ── Step 5: timed loop.
     tracing::info!(iters = TIMED_ITERS, "timed run");
     let start = Instant::now();
     for _ in 0..TIMED_ITERS {
-        forward(&h, &x, &w1, &b1_broadcast, &w2, &mut z1, &mut z2);
+        forward(
+            &h,
+            &x_dev,
+            &w1_dev,
+            &b1_broadcast_dev,
+            &w2_dev,
+            &mut z1_dev,
+            &mut z2_dev,
+        )?;
     }
+    // Kernel launches are async on the host. Without this sync the timer
+    // would only measure launch overhead, not actual GPU work.
+    h.synchronize()?;
     let elapsed = start.elapsed();
 
     let ms_per_iter = elapsed.as_secs_f64() * 1000.0 / TIMED_ITERS as f64;
     let samples_per_sec = (BATCH * TIMED_ITERS) as f64 / elapsed.as_secs_f64();
-    // FLOPs per forward pass: 2 sgemms.
     let flops_per_iter =
         2.0 * (BATCH * HIDDEN * IN_FEATURES) as f64 + 2.0 * (BATCH * OUT_FEATURES * HIDDEN) as f64;
     let gflops = flops_per_iter / (ms_per_iter / 1000.0) / 1e9;
 
+    // Download Z2 once for spot-check.
+    let z2_host = h.download(&z2_dev)?;
+
     println!();
-    println!("MLP forward pass — naive SGEMM backend");
+    println!("MLP forward pass — tiled SGEMM backend, device-resident weights");
     println!("  shape:       batch={BATCH}, {IN_FEATURES} → {HIDDEN} → {OUT_FEATURES}");
     println!("  per-iter:    {ms_per_iter:>7.3} ms");
     println!("  throughput:  {samples_per_sec:>7.0} samples/s");
     println!("  GFLOPS:      {gflops:>7.1}");
     println!();
-    println!("Spot-check: z2[0..5] = {:?}", &z2[..5]);
+    println!("Spot-check: z2[0..5] = {:?}", &z2_host[..5]);
+
+    Ok(())
 }
 
-/// One forward pass. Two sgemms + one saxpy; the rest of a real MLP
-/// (second-layer bias, ReLU, softmax) is stubbed below.
+/// One forward pass — pure device work, no H2D/D2H per iteration.
 #[tracing::instrument(level = "debug", skip_all, name = "forward")]
 fn forward(
     h: &Handle,
-    x: &[f32],
-    w1: &[f32],
-    b1_broadcast: &[f32],
-    w2: &[f32],
-    z1: &mut [f32],
-    z2: &mut [f32],
-) {
+    x: &DeviceBuf<f32>,
+    w1: &DeviceBuf<f32>,
+    b1_broadcast: &DeviceBuf<f32>,
+    w2: &DeviceBuf<f32>,
+    z1: &mut DeviceBuf<f32>,
+    z2: &mut DeviceBuf<f32>,
+) -> Result<()> {
     // Layer 1: Z1 = X @ W1
-    h.sgemm_naive(
+    h.sgemm_tiled(
         &GemmConfig {
             m: BATCH,
             n: HIDDEN,
@@ -122,16 +138,15 @@ fn forward(
         x,
         w1,
         z1,
-    );
+    )?;
 
-    // Z1 += b1 (broadcast). One full-size saxpy beats N row-wise saxpys.
-    h.saxpy(z1.len(), 1.0, b1_broadcast, z1);
+    // Z1 += b1 (broadcast across rows, materialised once at startup).
+    h.saxpy(BATCH * HIDDEN, 1.0, b1_broadcast, z1)?;
 
-    // TODO: in-place ReLU on z1 — needs an elementwise kernel
-    //       (`Handle::relu(&mut z1)` once that lands).
+    // TODO: in-place ReLU on z1 — elementwise kernel.
 
     // Layer 2: Z2 = Z1 @ W2
-    h.sgemm_naive(
+    h.sgemm_tiled(
         &GemmConfig {
             m: BATCH,
             n: OUT_FEATURES,
@@ -142,18 +157,17 @@ fn forward(
         z1,
         w2,
         z2,
-    );
+    )?;
 
-    // TODO: Z2 += b2 — same bias-broadcast saxpy pattern as Layer 1.
-    // TODO: softmax(z2) along the OUT_FEATURES axis — needs a reduction
-    //       kernel; not classic BLAS.
+    // TODO: Z2 += b2 (same bias-broadcast saxpy pattern).
+    // TODO: softmax(z2) along OUT_FEATURES axis — row reduction kernel.
+
+    Ok(())
 }
 
 // ── helpers ──────────────────────────────────────────────────────────────
 
 fn init_weights(rows: usize, cols: usize, scale: f32) -> Vec<f32> {
-    // Deterministic pseudo-random init — same idea as PyTorch's default
-    // Linear weight init, without pulling in a real RNG dep.
     (0..rows * cols)
         .map(|i| (((i * 2654435761) & 0xffff) as f32 / 65535.0 - 0.5) * 2.0 * scale)
         .collect()
@@ -169,8 +183,6 @@ fn init_input(batch: usize, features: usize) -> Vec<f32> {
         .collect()
 }
 
-/// Tile `bias` (length cols) across `rows` rows so the result has shape
-/// (rows, cols) row-major.
 fn broadcast_bias(bias: &[f32], rows: usize) -> Vec<f32> {
     let cols = bias.len();
     let mut out = Vec::with_capacity(rows * cols);

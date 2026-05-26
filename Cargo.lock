@@ -103,7 +103,9 @@ dependencies = [
 name = "cublas-core"
 version = "0.1.0"
 dependencies = [
+ "cuda-core",
  "half",
+ "thiserror",
 ]
 
 [[package]]

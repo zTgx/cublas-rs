@@ -226,12 +226,18 @@ shorthand.
 | Level | Op                              | File                                          | Status |
 |-------|---------------------------------|-----------------------------------------------|--------|
 | L1    | `saxpy`                         | `cublas-l1/src/saxpy.rs`                      | ✓      |
-| L1    | `scal/copy/axpy/dot/nrm2/asum/iamax` | `cublas-l1/src/*.rs`                     | stub   |
+| L1    | `sscal`                         | `cublas-l1/src/scal.rs`                       | ✓      |
+| L1    | `scopy`                         | `cublas-l1/src/copy.rs`                       | ✓      |
+| L1    | `sdot`                          | `cublas-l1/src/dot.rs`                        | ✓      |
+| L1    | `snrm2`                         | `cublas-l1/src/nrm2.rs`                       | ✓      |
+| L1    | `sasum`                         | `cublas-l1/src/asum.rs`                       | ✓      |
+| L1    | `isamax`                        | `cublas-l1/src/iamax.rs`                      | ✓      |
+| L1    | `daxpy/haxpy`                   | `cublas-l1/src/axpy.rs`                       | stub   |
 | L2    | `sgemv/dgemv/hgemv`             | `cublas-l2/src/gemv.rs`                       | stub   |
 | L2    | `strsv`                         | `cublas-l2/src/trsv.rs`                       | stub   |
 | L2    | `ssymv`                         | `cublas-l2/src/symv.rs`                       | stub   |
 | L3    | `sgemm_naive`                   | `cublas-l3/src/sgemm/naive.rs`                | ✓      |
-| L3    | `sgemm_tiled`                   | `cublas-l3/src/sgemm/tiled.rs`                | stub   |
+| L3    | `sgemm_tiled`                   | `cublas-l3/src/sgemm/tiled.rs`                | ✓      |
 | L3    | `sgemm_vectorized`              | `cublas-l3/src/sgemm/vectorized.rs`           | stub   |
 | L3    | `sgemm_double_buf`              | `cublas-l3/src/sgemm/double_buf.rs`           | stub   |
 | L3    | `dgemm_*` (4 variants)          | `cublas-l3/src/dgemm/*.rs`                    | stub   |

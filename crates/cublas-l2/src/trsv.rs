@@ -2,7 +2,7 @@
 //
 // A is n x n triangular (row-major). Gates Cholesky / LU solvers.
 
-use cublas_core::Transpose;
+use cublas_core::{Result, Transpose};
 
 /// Whether A is upper- or lower-triangular.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -28,7 +28,7 @@ pub fn strsv(
     n: usize,
     a: &[f32],
     b: &mut [f32],
-) {
+) -> Result<()> {
     let _ = (uplo, trans, diag, n, a, b);
     todo!("launch STRSV kernel")
 }

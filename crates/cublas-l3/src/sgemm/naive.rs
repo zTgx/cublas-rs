@@ -2,9 +2,9 @@
 //
 // Row-major. One thread per element of C. No shared memory — baseline for
 // correctness and bandwidth. Reference for the L3 host-fn template; the
-// tiled/vectorized/double-buffered variants improve on top of this.
+// tiled / vectorized / double-buffered variants improve on top of this.
 
-use cublas_core::GemmConfig;
+use cublas_core::{GemmConfig, Result};
 use cuda_core::{CudaStream, DeviceBuffer, LaunchConfig};
 use cuda_device::{DisjointSlice, cuda_module, kernel, thread};
 
@@ -50,35 +50,24 @@ pub mod kernels {
 
 const BLOCK_SIZE: u32 = 16;
 
-/// Internal launcher. End users go through `cublas_rs::Handle::sgemm_naive`.
+/// Device-buffer path. End users go through `cublas_rs::Handle::sgemm_naive`.
 #[tracing::instrument(
     level = "debug",
     skip(module, stream, config, a, b, c),
     fields(op = "sgemm_naive", m = config.m, n = config.n, k = config.k),
 )]
-pub fn sgemm_naive(
+pub fn sgemm_naive_dev(
     module: &kernels::LoadedModule,
     stream: &CudaStream,
     config: &GemmConfig<f32>,
-    a: &[f32],
-    b: &[f32],
-    c: &mut [f32],
-) {
-    let GemmConfig {
-        m,
-        n,
-        k,
-        alpha,
-        beta,
-    } = *config;
-    assert_eq!(a.len(), m * k, "A length must equal m*k");
-    assert_eq!(b.len(), k * n, "B length must equal k*n");
-    assert_eq!(c.len(), m * n, "C length must equal m*n");
-
-    tracing::trace!("H2D A, B, C");
-    let a_dev = DeviceBuffer::from_host(stream, a).expect("copy A to device");
-    let b_dev = DeviceBuffer::from_host(stream, b).expect("copy B to device");
-    let mut c_dev = DeviceBuffer::from_host(stream, c).expect("copy C to device");
+    a: &DeviceBuffer<f32>,
+    b: &DeviceBuffer<f32>,
+    c: &mut DeviceBuffer<f32>,
+) -> Result<()> {
+    let GemmConfig { m, n, k, alpha, beta } = *config;
+    if m == 0 || n == 0 || k == 0 {
+        return Ok(());
+    }
 
     let grid_x = (n as u32).div_ceil(BLOCK_SIZE);
     let grid_y = (m as u32).div_ceil(BLOCK_SIZE);
@@ -88,23 +77,52 @@ pub fn sgemm_naive(
         shared_mem_bytes: 0,
     };
     tracing::trace!(grid = ?cfg.grid_dim, block = ?cfg.block_dim, "launch SGEMM naive");
+    module.sgemm_naive(
+        stream,
+        cfg,
+        m as u32,
+        n as u32,
+        k as u32,
+        alpha,
+        a,
+        b,
+        beta,
+        c,
+    )?;
+    Ok(())
+}
 
-    module
-        .sgemm_naive(
-            stream,
-            cfg,
-            m as u32,
-            n as u32,
-            k as u32,
-            alpha,
-            &a_dev,
-            &b_dev,
-            beta,
-            &mut c_dev,
-        )
-        .expect("SGEMM naive launch");
+/// Host-slice convenience wrapper. Allocates + uploads + downloads each call.
+#[tracing::instrument(
+    level = "debug",
+    skip(module, stream, config, a, b, c),
+    fields(op = "sgemm_naive_simple", m = config.m, n = config.n, k = config.k),
+)]
+pub fn sgemm_naive(
+    module: &kernels::LoadedModule,
+    stream: &CudaStream,
+    config: &GemmConfig<f32>,
+    a: &[f32],
+    b: &[f32],
+    c: &mut [f32],
+) -> Result<()> {
+    let GemmConfig { m, n, k, .. } = *config;
+    assert_eq!(a.len(), m * k, "A length must equal m*k");
+    assert_eq!(b.len(), k * n, "B length must equal k*n");
+    assert_eq!(c.len(), m * n, "C length must equal m*n");
+    if m == 0 || n == 0 || k == 0 {
+        return Ok(());
+    }
+
+    tracing::trace!("H2D A, B, C");
+    let a_dev = DeviceBuffer::from_host(stream, a)?;
+    let b_dev = DeviceBuffer::from_host(stream, b)?;
+    let mut c_dev = DeviceBuffer::from_host(stream, c)?;
+
+    sgemm_naive_dev(module, stream, config, &a_dev, &b_dev, &mut c_dev)?;
 
     tracing::trace!("D2H C");
-    let result = c_dev.to_host_vec(stream).expect("copy C back");
+    let result = c_dev.to_host_vec(stream)?;
     c.copy_from_slice(&result);
+    Ok(())
 }

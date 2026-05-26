@@ -2,7 +2,7 @@
 //
 // Each matrix A_k = a[k * stride_a ..]. Same for B and C.
 
-use cublas_core::GemmConfig;
+use cublas_core::{GemmConfig, Result};
 
 /// Strided batched SGEMM kernel launch.
 ///
@@ -16,7 +16,7 @@ pub fn strided_batched_sgemm(
     stride_b: usize,
     c: &mut [f32],
     stride_c: usize,
-) {
+) -> Result<()> {
     let _ = (config, batch_count, a, stride_a, b, stride_b, c, stride_c);
     todo!("launch strided batched SGEMM kernel")
 }
