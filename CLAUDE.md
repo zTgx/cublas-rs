@@ -243,8 +243,8 @@ shorthand.
 | L3    | `dgemm_vectorized/double_buf`   | `cublas-l3/src/dgemm.rs`                      | stub   |
 | L3    | `hgemm_half`                    | `cublas-l3/src/hgemm.rs`                      | stub   |
 | L3    | `hgemm_tensor_core`             | `cublas-l3/src/hgemm.rs`                      | blocked — WMMA wrapper missing |
-| L3    | `batched_sgemm`                 | `cublas-l3/src/batched.rs`                    | stub   |
-| L3    | `strided_batched_sgemm`         | `cublas-l3/src/batched.rs`                    | stub   |
+| L3    | `strided_batched_sgemm`         | `cublas-l3/src/batched.rs`                    | ✓ — 3D grid, blockIdx.z = batch, 16×16 tile per block |
+| L3    | `batched_sgemm`                 | `cublas-l3/src/batched.rs`                    | ✓ — host concat + delegate to strided         |
 | —     | `GpuTimer`                      | `cublas-bench-core/src/timer.rs`              | stub   |
 | —     | `validate_gemm`                 | `cublas-bench-core/src/validator.rs`          | stub   |
 

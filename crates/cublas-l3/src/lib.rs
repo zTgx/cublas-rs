@@ -27,6 +27,7 @@ pub use hgemm::{hgemm_half, hgemm_tensor_core};
 pub use sgemm::{sgemm_double_buf, sgemm_naive, sgemm_tiled, sgemm_vectorized};
 
 // Device-buffer primary path.
+pub use batched::strided_batched_sgemm_dev;
 pub use dgemm::{dgemm_naive_dev, dgemm_tiled_dev};
 pub use sgemm::{sgemm_naive_dev, sgemm_tiled_dev};
 
@@ -35,6 +36,7 @@ pub use sgemm::{sgemm_naive_dev, sgemm_tiled_dev};
 pub struct Modules {
     pub sgemm: sgemm::kernels::LoadedModule,
     pub dgemm: dgemm::kernels::LoadedModule,
+    pub batched: batched::kernels::LoadedModule,
 }
 
 impl Modules {
@@ -47,7 +49,8 @@ impl Modules {
         let raw = ctx.load_module_from_file(path)?;
         Ok(Self {
             sgemm: sgemm::kernels::from_module(raw.clone())?,
-            dgemm: dgemm::kernels::from_module(raw)?,
+            dgemm: dgemm::kernels::from_module(raw.clone())?,
+            batched: batched::kernels::from_module(raw)?,
         })
     }
 }

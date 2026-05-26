@@ -573,6 +573,8 @@ impl Handle {
         todo!("Tensor-Core HGEMM blocked on cuda-oxide WMMA support");
     }
 
+    /// Batched SGEMM (same shape per batch). Host-side concatenation +
+    /// single launch — best when host slices already exist.
     pub fn batched_sgemm(
         &self,
         config: &GemmConfig<f32>,
@@ -581,11 +583,46 @@ impl Handle {
         b: &[&[f32]],
         c: &mut [&mut [f32]],
     ) -> Result<()> {
-        let _ = (config, batch_count, a, b, c);
-        todo!("batched SGEMM not yet implemented");
+        cublas_l3::batched_sgemm(
+            &self.l3.batched,
+            &self.stream,
+            config,
+            batch_count,
+            a,
+            b,
+            c,
+        )
     }
 
+    /// Strided batched SGEMM (device buffers). All batches share `(m, n, k)`;
+    /// each batch's `A_k = a[k * stride_a..]` etc.
     pub fn strided_batched_sgemm(
+        &self,
+        config: &GemmConfig<f32>,
+        batch_count: usize,
+        a: &DeviceBuffer<f32>,
+        stride_a: usize,
+        b: &DeviceBuffer<f32>,
+        stride_b: usize,
+        c: &mut DeviceBuffer<f32>,
+        stride_c: usize,
+    ) -> Result<()> {
+        cublas_l3::strided_batched_sgemm_dev(
+            &self.l3.batched,
+            &self.stream,
+            config,
+            batch_count,
+            a,
+            stride_a,
+            b,
+            stride_b,
+            c,
+            stride_c,
+        )
+    }
+
+    /// Strided batched SGEMM (host slices).
+    pub fn strided_batched_sgemm_simple(
         &self,
         config: &GemmConfig<f32>,
         batch_count: usize,
@@ -596,8 +633,18 @@ impl Handle {
         c: &mut [f32],
         stride_c: usize,
     ) -> Result<()> {
-        let _ = (config, batch_count, a, stride_a, b, stride_b, c, stride_c);
-        todo!("strided batched SGEMM not yet implemented");
+        cublas_l3::strided_batched_sgemm(
+            &self.l3.batched,
+            &self.stream,
+            config,
+            batch_count,
+            a,
+            stride_a,
+            b,
+            stride_b,
+            c,
+            stride_c,
+        )
     }
 }
 
