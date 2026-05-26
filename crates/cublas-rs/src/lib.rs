@@ -240,6 +240,58 @@ impl Handle {
         cublas_l2::sgemv(&self.l2.gemv, &self.stream, trans, m, n, alpha, a, x, beta, y)
     }
 
+    /// `y := alpha * op(A) * x + beta * y` (f32, shared-mem tiled, device buffers).
+    pub fn sgemv_tiled(
+        &self,
+        trans: Transpose,
+        m: usize,
+        n: usize,
+        alpha: f32,
+        a: &DeviceBuffer<f32>,
+        x: &DeviceBuffer<f32>,
+        beta: f32,
+        y: &mut DeviceBuffer<f32>,
+    ) -> Result<()> {
+        cublas_l2::sgemv_tiled_dev(
+            &self.l2.gemv,
+            &self.stream,
+            trans,
+            m,
+            n,
+            alpha,
+            a,
+            x,
+            beta,
+            y,
+        )
+    }
+
+    /// `y := alpha * op(A) * x + beta * y` (f32, shared-mem tiled, host slices).
+    pub fn sgemv_tiled_simple(
+        &self,
+        trans: Transpose,
+        m: usize,
+        n: usize,
+        alpha: f32,
+        a: &[f32],
+        x: &[f32],
+        beta: f32,
+        y: &mut [f32],
+    ) -> Result<()> {
+        cublas_l2::sgemv_tiled(
+            &self.l2.gemv,
+            &self.stream,
+            trans,
+            m,
+            n,
+            alpha,
+            a,
+            x,
+            beta,
+            y,
+        )
+    }
+
     pub fn dgemv(
         &self,
         trans: Transpose,
@@ -270,7 +322,22 @@ impl Handle {
         todo!("HGEMV kernel not yet implemented");
     }
 
+    /// Solve `op(A) * x = b` in place (`b` overwritten with solution).
+    /// Single-thread sequential kernel — correct on any arch, slow for big n.
     pub fn strsv(
+        &self,
+        uplo: Triangular,
+        trans: Transpose,
+        diag: Diag,
+        n: usize,
+        a: &DeviceBuffer<f32>,
+        b: &mut DeviceBuffer<f32>,
+    ) -> Result<()> {
+        cublas_l2::strsv_dev(&self.l2.trsv, &self.stream, uplo, trans, diag, n, a, b)
+    }
+
+    /// Solve `op(A) * x = b` (host slices).
+    pub fn strsv_simple(
         &self,
         uplo: Triangular,
         trans: Transpose,
@@ -279,11 +346,35 @@ impl Handle {
         a: &[f32],
         b: &mut [f32],
     ) -> Result<()> {
-        let _ = (uplo, trans, diag, n, a, b);
-        todo!("STRSV kernel not yet implemented");
+        cublas_l2::strsv(&self.l2.trsv, &self.stream, uplo, trans, diag, n, a, b)
     }
 
+    /// `y := alpha * A * x + beta * y`, A symmetric (only `uplo` half read).
     pub fn ssymv(
+        &self,
+        uplo: Triangular,
+        n: usize,
+        alpha: f32,
+        a: &DeviceBuffer<f32>,
+        x: &DeviceBuffer<f32>,
+        beta: f32,
+        y: &mut DeviceBuffer<f32>,
+    ) -> Result<()> {
+        cublas_l2::ssymv_dev(
+            &self.l2.symv,
+            &self.stream,
+            uplo,
+            n,
+            alpha,
+            a,
+            x,
+            beta,
+            y,
+        )
+    }
+
+    /// `y := alpha * A * x + beta * y`, A symmetric (host slices).
+    pub fn ssymv_simple(
         &self,
         uplo: Triangular,
         n: usize,
@@ -293,8 +384,7 @@ impl Handle {
         beta: f32,
         y: &mut [f32],
     ) -> Result<()> {
-        let _ = (uplo, n, alpha, a, x, beta, y);
-        todo!("SSYMV kernel not yet implemented");
+        cublas_l2::ssymv(&self.l2.symv, &self.stream, uplo, n, alpha, a, x, beta, y)
     }
 
     // =====================================================================

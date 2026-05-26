@@ -1,0 +1,12 @@
+[package]
+name = "linreg"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+cublas-rs.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true

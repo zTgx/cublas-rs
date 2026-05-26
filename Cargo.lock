@@ -312,6 +312,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "linreg"
+version = "0.1.0"
+dependencies = [
+ "cublas-rs",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "log"
 version = "0.4.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
