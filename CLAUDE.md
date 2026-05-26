@@ -233,7 +233,8 @@ shorthand.
 | L1    | `sasum`                         | `cublas-l1/src/asum.rs`                       | ✓      |
 | L1    | `isamax`                        | `cublas-l1/src/iamax.rs`                      | ✓      |
 | L1    | `daxpy/haxpy`                   | `cublas-l1/src/axpy.rs`                       | stub   |
-| L2    | `sgemv/dgemv/hgemv`             | `cublas-l2/src/gemv.rs`                       | stub   |
+| L2    | `sgemv`                         | `cublas-l2/src/gemv.rs`                       | ✓      |
+| L2    | `dgemv/hgemv`                   | `cublas-l2/src/gemv.rs`                       | stub   |
 | L2    | `strsv`                         | `cublas-l2/src/trsv.rs`                       | stub   |
 | L2    | `ssymv`                         | `cublas-l2/src/symv.rs`                       | stub   |
 | L3    | `sgemm_naive`                   | `cublas-l3/src/sgemm/naive.rs`                | ✓      |

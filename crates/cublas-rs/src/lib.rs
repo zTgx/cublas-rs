@@ -44,6 +44,7 @@ pub struct Handle {
     ctx: Arc<CudaContext>,
     stream: Arc<CudaStream>,
     l1: cublas_l1::Modules,
+    l2: cublas_l2::Modules,
     l3: cublas_l3::Modules,
 }
 
@@ -60,9 +61,10 @@ impl Handle {
         let stream = ctx.default_stream();
         tracing::info!(device_idx, "CUDA context + default stream ready");
         let l1 = cublas_l1::Modules::load(&ctx)?;
+        let l2 = cublas_l2::Modules::load(&ctx)?;
         let l3 = cublas_l3::Modules::load(&ctx)?;
-        tracing::info!("Handle ready (L1 + L3 modules loaded)");
-        Ok(Self { ctx, stream, l1, l3 })
+        tracing::info!("Handle ready (L1 + L2 + L3 modules loaded)");
+        Ok(Self { ctx, stream, l1, l2, l3 })
     }
 
     /// Direct access to the underlying CUDA stream. Useful when interleaving
@@ -207,7 +209,24 @@ impl Handle {
     // Level 2 — matrix-vector ops (all stubs)
     // =====================================================================
 
+    /// `y := alpha * op(A) * x + beta * y` (f32, device buffers).
+    /// `op(A)` is `A` (NoTrans) or `Aᵀ` (Trans). A is m×n row-major.
     pub fn sgemv(
+        &self,
+        trans: Transpose,
+        m: usize,
+        n: usize,
+        alpha: f32,
+        a: &DeviceBuffer<f32>,
+        x: &DeviceBuffer<f32>,
+        beta: f32,
+        y: &mut DeviceBuffer<f32>,
+    ) -> Result<()> {
+        cublas_l2::sgemv_dev(&self.l2.gemv, &self.stream, trans, m, n, alpha, a, x, beta, y)
+    }
+
+    /// `y := alpha * op(A) * x + beta * y` (f32, host slices).
+    pub fn sgemv_simple(
         &self,
         trans: Transpose,
         m: usize,
@@ -218,8 +237,7 @@ impl Handle {
         beta: f32,
         y: &mut [f32],
     ) -> Result<()> {
-        let _ = (trans, m, n, alpha, a, x, beta, y);
-        todo!("SGEMV kernel not yet implemented");
+        cublas_l2::sgemv(&self.l2.gemv, &self.stream, trans, m, n, alpha, a, x, beta, y)
     }
 
     pub fn dgemv(

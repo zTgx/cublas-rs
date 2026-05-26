@@ -13,3 +13,4 @@ half.workspace = true
 cuda-core.workspace = true
 cuda-device.workspace = true
 cuda-host.workspace = true
+tracing.workspace = true

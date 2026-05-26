@@ -6,7 +6,7 @@
 //! Run with:
 //!   cargo oxide run --bin saxpy
 
-use cublas_rs::Handle;
+use cublas_rs::{Handle, Transpose};
 
 fn main() {
     const N: usize = 1024;
@@ -82,6 +82,50 @@ fn main() {
         if copy_ok { "OK" } else { "FAIL" }
     );
     if !scal_ok || !copy_ok {
+        std::process::exit(1);
+    }
+
+    // L2 sgemv smoke check: A = ones(M, K), x = [1, 1, ..., 1], expected y[i] = K.
+    // Then verify Trans: y = Aᵀ * x where x is ones(M) → y[j] = M.
+    const M_ROWS: usize = 16;
+    const K_COLS: usize = 24;
+    let a_mat = vec![1.0f32; M_ROWS * K_COLS];
+    let x_vec = vec![1.0f32; K_COLS];
+    let mut y_vec = vec![0.0f32; M_ROWS];
+    h.sgemv_simple(
+        Transpose::NoTrans,
+        M_ROWS,
+        K_COLS,
+        1.0,
+        &a_mat,
+        &x_vec,
+        0.0,
+        &mut y_vec,
+    )
+    .expect("sgemv NoTrans");
+    let n_ok = y_vec.iter().all(|&v| (v - K_COLS as f32).abs() < 1e-3);
+
+    let x_trans = vec![1.0f32; M_ROWS];
+    let mut y_trans = vec![0.0f32; K_COLS];
+    h.sgemv_simple(
+        Transpose::Trans,
+        M_ROWS,
+        K_COLS,
+        1.0,
+        &a_mat,
+        &x_trans,
+        0.0,
+        &mut y_trans,
+    )
+    .expect("sgemv Trans");
+    let t_ok = y_trans.iter().all(|&v| (v - M_ROWS as f32).abs() < 1e-3);
+
+    println!(
+        "L2 sgemv: NoTrans {}  Trans {}",
+        if n_ok { "OK" } else { "FAIL" },
+        if t_ok { "OK" } else { "FAIL" }
+    );
+    if !n_ok || !t_ok {
         std::process::exit(1);
     }
 }
