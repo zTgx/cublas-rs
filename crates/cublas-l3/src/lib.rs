@@ -22,6 +22,7 @@ pub use hgemm::{hgemm_half, hgemm_tensor_core};
 pub use sgemm::{sgemm_double_buf, sgemm_naive, sgemm_tiled, sgemm_vectorized};
 
 // Device-buffer primary path.
+pub use dgemm::{dgemm_naive_dev, dgemm_tiled_dev};
 pub use sgemm::{sgemm_naive_dev, sgemm_tiled_dev};
 
 /// All L3 kernel modules, typed and ready to launch. Built once by
@@ -29,6 +30,8 @@ pub use sgemm::{sgemm_naive_dev, sgemm_tiled_dev};
 pub struct Modules {
     pub sgemm_naive: sgemm::naive::kernels::LoadedModule,
     pub sgemm_tiled: sgemm::tiled::kernels::LoadedModule,
+    pub dgemm_naive: dgemm::naive::kernels::LoadedModule,
+    pub dgemm_tiled: dgemm::tiled::kernels::LoadedModule,
 }
 
 impl Modules {
@@ -41,7 +44,9 @@ impl Modules {
         let raw = ctx.load_module_from_file(path)?;
         Ok(Self {
             sgemm_naive: sgemm::naive::kernels::from_module(raw.clone())?,
-            sgemm_tiled: sgemm::tiled::kernels::from_module(raw)?,
+            sgemm_tiled: sgemm::tiled::kernels::from_module(raw.clone())?,
+            dgemm_naive: dgemm::naive::kernels::from_module(raw.clone())?,
+            dgemm_tiled: dgemm::tiled::kernels::from_module(raw)?,
         })
     }
 }

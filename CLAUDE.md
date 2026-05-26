@@ -241,7 +241,9 @@ shorthand.
 | L3    | `sgemm_tiled`                   | `cublas-l3/src/sgemm/tiled.rs`                | ✓      |
 | L3    | `sgemm_vectorized`              | `cublas-l3/src/sgemm/vectorized.rs`           | stub   |
 | L3    | `sgemm_double_buf`              | `cublas-l3/src/sgemm/double_buf.rs`           | stub   |
-| L3    | `dgemm_*` (4 variants)          | `cublas-l3/src/dgemm/*.rs`                    | stub   |
+| L3    | `dgemm_naive`                   | `cublas-l3/src/dgemm/naive.rs`                | ✓      |
+| L3    | `dgemm_tiled`                   | `cublas-l3/src/dgemm/tiled.rs`                | ✓      |
+| L3    | `dgemm_vectorized/double_buf`   | `cublas-l3/src/dgemm/*.rs`                    | stub   |
 | L3    | `hgemm_half`                    | `cublas-l3/src/hgemm/half.rs`                 | stub   |
 | L3    | `hgemm_tensor_core`             | `cublas-l3/src/hgemm/tensor_core.rs`          | blocked — WMMA wrapper missing |
 | L3    | `batched_sgemm`                 | `cublas-l3/src/batched/simple.rs`             | stub   |

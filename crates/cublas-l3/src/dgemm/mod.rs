@@ -4,11 +4,11 @@
 //! the WMMA wrapper that would expose them is missing in cuda-oxide today.
 
 mod double_buf;
-mod naive;
-mod tiled;
+pub mod naive; // `kernels` submodule consumed by `cublas_l3::Modules::load`
+pub mod tiled; // ditto
 mod vectorized;
 
 pub use double_buf::dgemm_double_buf;
-pub use naive::dgemm_naive;
-pub use tiled::dgemm_tiled;
+pub use naive::{dgemm_naive, dgemm_naive_dev};
+pub use tiled::{dgemm_tiled, dgemm_tiled_dev};
 pub use vectorized::dgemm_vectorized;

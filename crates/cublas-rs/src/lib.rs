@@ -457,26 +457,48 @@ impl Handle {
         todo!("double-buffered SGEMM kernel not yet implemented");
     }
 
+    /// `C := alpha * A * B + beta * C` (f64, naive, device buffers).
     pub fn dgemm_naive(
         &self,
         config: &GemmConfig<f64>,
-        a: &[f64],
-        b: &[f64],
-        c: &mut [f64],
+        a: &DeviceBuffer<f64>,
+        b: &DeviceBuffer<f64>,
+        c: &mut DeviceBuffer<f64>,
     ) -> Result<()> {
-        let _ = (config, a, b, c);
-        todo!("naive DGEMM kernel not yet implemented");
+        cublas_l3::dgemm_naive_dev(&self.l3.dgemm_naive, &self.stream, config, a, b, c)
     }
 
-    pub fn dgemm_tiled(
+    /// `C := alpha * A * B + beta * C` (f64, naive, host slices).
+    pub fn dgemm_naive_simple(
         &self,
         config: &GemmConfig<f64>,
         a: &[f64],
         b: &[f64],
         c: &mut [f64],
     ) -> Result<()> {
-        let _ = (config, a, b, c);
-        todo!("tiled DGEMM kernel not yet implemented");
+        cublas_l3::dgemm_naive(&self.l3.dgemm_naive, &self.stream, config, a, b, c)
+    }
+
+    /// `C := alpha * A * B + beta * C` (f64, shared-mem tiled, device buffers).
+    pub fn dgemm_tiled(
+        &self,
+        config: &GemmConfig<f64>,
+        a: &DeviceBuffer<f64>,
+        b: &DeviceBuffer<f64>,
+        c: &mut DeviceBuffer<f64>,
+    ) -> Result<()> {
+        cublas_l3::dgemm_tiled_dev(&self.l3.dgemm_tiled, &self.stream, config, a, b, c)
+    }
+
+    /// `C := alpha * A * B + beta * C` (f64, shared-mem tiled, host slices).
+    pub fn dgemm_tiled_simple(
+        &self,
+        config: &GemmConfig<f64>,
+        a: &[f64],
+        b: &[f64],
+        c: &mut [f64],
+    ) -> Result<()> {
+        cublas_l3::dgemm_tiled(&self.l3.dgemm_tiled, &self.stream, config, a, b, c)
     }
 
     pub fn dgemm_vectorized(
