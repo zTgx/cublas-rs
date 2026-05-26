@@ -228,7 +228,7 @@ shorthand.
 | L2    | `sgemv/dgemv/hgemv`             | `cublas-l2/src/gemv.rs`                       | stub   |
 | L2    | `strsv`                         | `cublas-l2/src/trsv.rs`                       | stub   |
 | L2    | `ssymv`                         | `cublas-l2/src/symv.rs`                       | stub   |
-| L3    | `sgemm_naive`                   | `cublas-l3/src/sgemm/naive.rs`                | stub   |
+| L3    | `sgemm_naive`                   | `cublas-l3/src/sgemm/naive.rs`                | ✓      |
 | L3    | `sgemm_tiled`                   | `cublas-l3/src/sgemm/tiled.rs`                | stub   |
 | L3    | `sgemm_vectorized`              | `cublas-l3/src/sgemm/vectorized.rs`           | stub   |
 | L3    | `sgemm_double_buf`              | `cublas-l3/src/sgemm/double_buf.rs`           | stub   |

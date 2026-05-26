@@ -36,6 +36,7 @@ pub struct Handle {
     ctx: Arc<CudaContext>,
     stream: Arc<CudaStream>,
     l1: cublas_l1::Modules,
+    l3: cublas_l3::Modules,
 }
 
 impl Handle {
@@ -49,7 +50,8 @@ impl Handle {
         let ctx = CudaContext::new(device_idx)?;
         let stream = ctx.default_stream();
         let l1 = cublas_l1::Modules::load(&ctx)?;
-        Ok(Self { ctx, stream, l1 })
+        let l3 = cublas_l3::Modules::load(&ctx)?;
+        Ok(Self { ctx, stream, l1, l3 })
     }
 
     // =====================================================================
@@ -194,10 +196,9 @@ impl Handle {
     // Level 3 — matrix-matrix ops
     // =====================================================================
 
-    /// `C := alpha * A * B + beta * C` (f32, naive).
+    /// `C := alpha * A * B + beta * C` (f32, naive). Row-major.
     pub fn sgemm_naive(&self, config: &GemmConfig<f32>, a: &[f32], b: &[f32], c: &mut [f32]) {
-        let _ = (config, a, b, c);
-        todo!("naive SGEMM kernel not yet implemented");
+        cublas_l3::sgemm_naive(&self.l3.sgemm_naive, &self.stream, config, a, b, c);
     }
 
     /// SGEMM with shared-memory tiling.

@@ -7,7 +7,7 @@
 //! - [`double_buf`] — manual double-buffered shared memory pipeline
 
 mod double_buf;
-mod naive;
+pub mod naive; // `kernels` submodule consumed by `cublas_l3::Modules::load`
 mod tiled;
 mod vectorized;
 
