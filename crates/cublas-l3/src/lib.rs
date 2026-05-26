@@ -28,7 +28,9 @@ pub use sgemm::{sgemm_double_buf, sgemm_naive, sgemm_tiled, sgemm_vectorized};
 
 // Device-buffer primary path.
 pub use batched::strided_batched_sgemm_dev;
-pub use dgemm::{dgemm_naive_dev, dgemm_tiled_dev};
+pub use dgemm::{
+    dgemm_double_buf_dev, dgemm_naive_dev, dgemm_tiled_dev, dgemm_vectorized_dev,
+};
 pub use sgemm::{
     sgemm_double_buf_dev, sgemm_naive_dev, sgemm_tiled_dev, sgemm_vectorized_dev,
 };

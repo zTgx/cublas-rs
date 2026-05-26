@@ -64,9 +64,10 @@ Each example under `examples/` is a standalone crate (its own
 |--------------|---------------------------------------------------------------------|
 | `hello`      | Toolchain check — `#[cuda_module]` + `gpu_printf!`, no BLAS dep     |
 | `saxpy`      | L1 end-to-end + reduction smoke + L2 sgemv / hgemv smoke            |
-| `sgemm`      | L3 perf compare: SGEMM naive/tiled/vectorized/double_buf + DGEMM + batched |
+| `sgemm`      | L3 perf compare: SGEMM 4 variants + DGEMM 2 + batched + HGEMM half  |
 | `mlp`        | Realistic inference loop: device-resident weights, tiled SGEMM       |
 | `linreg`     | L2-heavy GD demo + strsv / ssymv smoke                              |
+| `gemm_bench` | Cross-GPU bench: all SGEMM/DGEMM variants × 3 sizes, pure kernel time |
 
 ## Build
 
@@ -81,8 +82,9 @@ cargo install --git https://github.com/NVlabs/cuda-oxide.git cargo-oxide
 cargo oxide run --bin hello    # toolchain smoke
 cargo oxide run --bin saxpy    # L1 + L2 smoke
 cargo oxide run --bin sgemm    # L3 perf compare
-cargo oxide run --bin mlp      # realistic inference loop
-cargo oxide run --bin linreg   # GD via L2 sgemv + L1 ops
+cargo oxide run --bin mlp        # realistic inference loop
+cargo oxide run --bin linreg     # GD via L2 sgemv + L1 ops
+cargo oxide run --bin gemm_bench # cross-GPU GEMM benchmark
 ```
 
 For pure type-checking (host crates + IDE), plain cargo works:

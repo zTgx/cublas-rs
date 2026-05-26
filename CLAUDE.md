@@ -18,9 +18,10 @@ cublas-rs/
 ├── examples/                 Standalone example crates
 │   ├── hello/                Pure cuda-oxide smoke test, no BLAS dep
 │   ├── saxpy/                L1 end-to-end + reduction smoke + L2 sgemv smoke
-│   ├── sgemm/                L3 perf compare: naive vs tiled, f32 + f64
+│   ├── sgemm/                L3 perf compare: SGEMM 4 variants + DGEMM 2 + batched + HGEMM half
 │   ├── mlp/                  Realistic L1 + L3 inference loop (device-resident weights)
-│   └── linreg/               L2-heavy GD demo + strsv/ssymv smoke
+│   ├── linreg/               L2-heavy GD demo + strsv/ssymv smoke
+│   └── gemm_bench/           Cross-GPU GEMM benchmark: SGEMM/DGEMM × 4 variants × 3 sizes
 ├── benches/                  Workspace member, self-contained: bench harnesses + GpuTimer + validators
 └── ../cuda-oxide/            (sibling) The codegen + runtime we depend on
 
@@ -238,8 +239,7 @@ shorthand.
 | L2    | `strsv` (4 variants, seq)       | `cublas-l2/src/trsv.rs`                       | ✓      |
 | L2    | `ssymv` (Upper/Lower)           | `cublas-l2/src/symv.rs`                       | ✓      |
 | L3    | `sgemm_*` (naive/tiled/vectorized/double_buf) | `cublas-l3/src/sgemm.rs`        | ✓      |
-| L3    | `dgemm_naive` + `dgemm_tiled`   | `cublas-l3/src/dgemm.rs`                      | ✓      |
-| L3    | `dgemm_vectorized/double_buf`   | `cublas-l3/src/dgemm.rs`                      | stub   |
+| L3    | `dgemm_*` (naive/tiled/vectorized/double_buf) | `cublas-l3/src/dgemm.rs`        | ✓      |
 | L3    | `hgemm_half`                    | `cublas-l3/src/hgemm.rs`                      | ✓ — tiled 16×16, u16 bit-twiddle, f32 accumulate |
 | L3    | `hgemm_tensor_core`             | `cublas-l3/src/hgemm.rs`                      | blocked — WMMA wrapper missing |
 | L3    | `strided_batched_sgemm`         | `cublas-l3/src/batched.rs`                    | ✓ — 3D grid, blockIdx.z = batch, 16×16 tile per block |

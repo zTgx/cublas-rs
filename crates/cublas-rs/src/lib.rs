@@ -567,26 +567,48 @@ impl Handle {
         cublas_l3::dgemm_tiled(&self.l3.dgemm, &self.stream, config, a, b, c)
     }
 
+    /// DGEMM with thread coarsening (4 outputs/thread). Device buffers.
     pub fn dgemm_vectorized(
         &self,
         config: &GemmConfig<f64>,
-        a: &[f64],
-        b: &[f64],
-        c: &mut [f64],
+        a: &DeviceBuffer<f64>,
+        b: &DeviceBuffer<f64>,
+        c: &mut DeviceBuffer<f64>,
     ) -> Result<()> {
-        let _ = (config, a, b, c);
-        todo!("vectorized DGEMM kernel not yet implemented");
+        cublas_l3::dgemm_vectorized_dev(&self.l3.dgemm, &self.stream, config, a, b, c)
     }
 
-    pub fn dgemm_double_buf(
+    /// DGEMM with thread coarsening (host slices).
+    pub fn dgemm_vectorized_simple(
         &self,
         config: &GemmConfig<f64>,
         a: &[f64],
         b: &[f64],
         c: &mut [f64],
     ) -> Result<()> {
-        let _ = (config, a, b, c);
-        todo!("double-buffered DGEMM kernel not yet implemented");
+        cublas_l3::dgemm_vectorized(&self.l3.dgemm, &self.stream, config, a, b, c)
+    }
+
+    /// DGEMM with double-buffered shared-memory loads. Device buffers.
+    pub fn dgemm_double_buf(
+        &self,
+        config: &GemmConfig<f64>,
+        a: &DeviceBuffer<f64>,
+        b: &DeviceBuffer<f64>,
+        c: &mut DeviceBuffer<f64>,
+    ) -> Result<()> {
+        cublas_l3::dgemm_double_buf_dev(&self.l3.dgemm, &self.stream, config, a, b, c)
+    }
+
+    /// DGEMM with double-buffered loads (host slices).
+    pub fn dgemm_double_buf_simple(
+        &self,
+        config: &GemmConfig<f64>,
+        a: &[f64],
+        b: &[f64],
+        c: &mut [f64],
+    ) -> Result<()> {
+        cublas_l3::dgemm_double_buf(&self.l3.dgemm, &self.stream, config, a, b, c)
     }
 
     /// `C := alpha * A * B + beta * C` (f16 in/out via raw u16, f32 accumulate).
