@@ -2,46 +2,43 @@
 //!
 //! A BLAS implementation built on [cuda-oxide](https://github.com/NVlabs/cuda-oxide).
 //!
-//! ## Usage
+//! ```ignore
+//! // Flat — every function pulled up to the crate root
+//! use cublas_rs::{saxpy, sgemv, sgemm_naive};
 //!
-//! All types and functions are re-exported at the crate root:
+//! // By BLAS level — matches textbook organisation
+//! use cublas_rs::level1::saxpy;
+//! use cublas_rs::level2::sgemv;
+//! use cublas_rs::level3::sgemm_naive;
 //!
-//! ```
-//! use cublas_rs::prelude::*;      // common types: GemmConfig, BlasScalar, etc.
-//! use cublas_rs::sgemm_naive;     // direct access to kernel functions
-//! use cublas_rs::hgemm::hgemm_half; // or via module namespace
+//! // Common types
+//! use cublas_rs::prelude::*;
 //! ```
 
-// Re-export all core types
+// Shared types (GemmConfig, BlasScalar, MatrixLayout, Transpose)
 pub use cublas_core::*;
 
-/// SGEMM module
-pub mod sgemm {
-    pub use cublas_sgemm::*;
+// Flat re-exports of every BLAS function.
+pub use cublas_l1::*;
+pub use cublas_l2::*;
+pub use cublas_l3::*;
+
+/// BLAS Level 1 — vector operations.
+pub mod level1 {
+    pub use cublas_l1::*;
 }
 
-/// DGEMM module
-pub mod dgemm {
-    pub use cublas_dgemm::*;
+/// BLAS Level 2 — matrix-vector operations.
+pub mod level2 {
+    pub use cublas_l2::*;
 }
 
-/// HGEMM module
-pub mod hgemm {
-    pub use cublas_hgemm::*;
-}
-
-/// Batched GEMM module
-pub mod batched {
-    pub use cublas_batched_gemm::*;
-}
-
-/// Vector operations module
-pub mod vector {
-    pub use cublas_vector::*;
+/// BLAS Level 3 — matrix-matrix operations (plus batched extensions).
+pub mod level3 {
+    pub use cublas_l3::*;
 }
 
 pub mod prelude {
-    //! Common types used by most projects.
-    //! `use cublas_rs::prelude::*;` to get started.
+    //! Common types used by most callers.
     pub use cublas_core::{BlasScalar, GemmConfig, MatrixLayout, Transpose};
 }

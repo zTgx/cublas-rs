@@ -3,14 +3,14 @@ resolver = "3"
 members = [
     "crates/cublas-rs",
     "crates/cublas-core",
-    "crates/cublas-sgemm",
-    "crates/cublas-dgemm",
-    "crates/cublas-hgemm",
-    "crates/cublas-batched-gemm",
-    "crates/cublas-vector",
+    "crates/cublas-l1",
+    "crates/cublas-l2",
+    "crates/cublas-l3",
     "crates/cublas-bench-core",
     "benches",
 ]
+# `cargo run --example ...` / `cargo build` (no -p) target cublas-rs by default.
+default-members = ["crates/cublas-rs"]
 
 [workspace.package]
 version = "0.1.0"
@@ -20,13 +20,18 @@ license = "Apache-2.0"
 repository = "https://github.com/zTgx/cublas-rs"
 
 [workspace.dependencies]
+# Internal crates
 cublas-rs = { version = "0.1.0", path = "crates/cublas-rs" }
 cublas-core = { version = "0.1.0", path = "crates/cublas-core" }
-cublas-sgemm = { version = "0.1.0", path = "crates/cublas-sgemm" }
-cublas-dgemm = { version = "0.1.0", path = "crates/cublas-dgemm" }
-cublas-hgemm = { version = "0.1.0", path = "crates/cublas-hgemm" }
-cublas-batched-gemm = { version = "0.1.0", path = "crates/cublas-batched-gemm" }
-cublas-vector = { version = "0.1.0", path = "crates/cublas-vector" }
+cublas-l1 = { version = "0.1.0", path = "crates/cublas-l1" }
+cublas-l2 = { version = "0.1.0", path = "crates/cublas-l2" }
+cublas-l3 = { version = "0.1.0", path = "crates/cublas-l3" }
 cublas-bench-core = { version = "0.1.0", path = "crates/cublas-bench-core" }
-cuda-oxide = { git = "https://github.com/NVlabs/cuda-oxide", branch = "main" }
+
+# cuda-oxide local checkout (../cuda-oxide). Switch to git deps when releasing.
+cuda-core = { path = "../cuda-oxide/crates/cuda-core" }
+cuda-device = { path = "../cuda-oxide/crates/cuda-device" }
+cuda-host = { path = "../cuda-oxide/crates/cuda-host" }
+
+# Third-party
 half = "2.7"

@@ -1,1 +1,0 @@
-// Basic SGEMM usage example

@@ -1,1 +1,0 @@
-// SAXPY vector operation example

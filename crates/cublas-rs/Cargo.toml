@@ -6,11 +6,24 @@ authors.workspace = true
 description = "A BLAS implementation built on cuda-oxide"
 license.workspace = true
 repository.workspace = true
+# cargo-oxide standalone mode only forwards `--bin <name>` to cargo (not
+# `--example`), so smoke tests are declared as bins. `default-run` makes
+# `cargo oxide run` pick the L1 smoke test without `--bin`.
+default-run = "saxpy"
+# Files in `examples/` are declared explicitly as `[[bin]]` below — disable
+# auto-discovery so the same file isn't claimed by both target kinds.
+autoexamples = false
 
 [dependencies]
 cublas-core.workspace = true
-cublas-sgemm.workspace = true
-cublas-dgemm.workspace = true
-cublas-hgemm.workspace = true
-cublas-batched-gemm.workspace = true
-cublas-vector.workspace = true
+cublas-l1.workspace = true
+cublas-l2.workspace = true
+cublas-l3.workspace = true
+
+[[bin]]
+name = "saxpy"
+path = "examples/saxpy.rs"
+
+[[bin]]
+name = "sgemm_basic"
+path = "examples/sgemm_basic.rs"

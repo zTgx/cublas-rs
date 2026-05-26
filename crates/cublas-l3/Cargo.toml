@@ -1,0 +1,15 @@
+[package]
+name = "cublas-l3"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "BLAS Level 3 (matrix-matrix) kernels built on cuda-oxide"
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+cublas-core.workspace = true
+half.workspace = true
+cuda-core.workspace = true
+cuda-device.workspace = true
+cuda-host.workspace = true
