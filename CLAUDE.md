@@ -19,13 +19,16 @@ cublas-rs/
 │   │     ├── hgemm/{half,tensor_core}.rs
 │   │     └── batched/{simple,strided}.rs
 │   └── cublas-rs/            Top-level facade — flat API + level1/level2/level3 namespaces
+├── examples/                 Runnable smoke tests (hello, saxpy, sgemm_basic)
 ├── benches/                  cublas-bench-core based benches
 └── ../cuda-oxide/            (sibling) The codegen + runtime we depend on
 
-Examples live inside the facade crate at `crates/cublas-rs/examples/` and are
-declared as `[[bin]]` targets (`autoexamples = false`). This is because
-cargo-oxide's standalone mode only forwards `--bin <name>` to the underlying
-`cargo run`, not `--example`. Run them with:
+Examples sit at the repo root in `examples/`. They are owned by the facade
+crate via explicit `[[bin]]` entries in `crates/cublas-rs/Cargo.toml` with
+`path = "../../examples/<name>.rs"` (and `autoexamples = false`). They're
+declared as bins, not examples, because cargo-oxide's standalone mode only
+forwards `--bin <name>` to the underlying `cargo run`, not `--example`. Run
+them with:
 
 ```bash
 cargo oxide run                     # default-run = hello (pure toolchain check)
@@ -104,18 +107,21 @@ SGEMM. Tensor Core HGEMM (312 TFLOPS path) blocked until WMMA wrapper exists.
 
 ## Kernel author template
 
-Single-source. Host wrapper + device kernel in the same file:
+Single-source. Host op + device kernel in the same file. The host op takes
+a typed kernel module and a stream from the caller — never calls
+`kernels::load` itself, because that only works when the kernel and the bin
+are in the same crate (it reads the bin's `.oxart` section).
 
 ```rust
-use cuda_core::{CudaContext, DeviceBuffer, LaunchConfig};
+use cuda_core::{CudaStream, DeviceBuffer, LaunchConfig};
 use cuda_device::{DisjointSlice, cuda_module, kernel, thread};
 
 #[cuda_module]
-mod kernels {
+pub mod kernels {              // pub: facade needs to call `from_module`
     use super::*;
 
     #[kernel]
-    pub fn my_kernel(alpha: f32, x: &[f32], mut y: DisjointSlice<f32>) {
+    pub fn my_op(alpha: f32, x: &[f32], mut y: DisjointSlice<f32>) {
         let idx = thread::index_1d();
         let i = idx.get();
         if let Some(out) = y.get_mut(idx) {
@@ -124,38 +130,82 @@ mod kernels {
     }
 }
 
-pub fn my_op(alpha: f32, x: &[f32], y: &mut [f32]) {
-    let ctx = CudaContext::new(0).expect("CUDA init");
-    let stream = ctx.default_stream();
-    let x_d = DeviceBuffer::from_host(&stream, x).unwrap();
-    let mut y_d = DeviceBuffer::from_host(&stream, y).unwrap();
+pub fn my_op(
+    module: &kernels::LoadedModule,
+    stream: &CudaStream,
+    alpha: f32,
+    x: &[f32],
+    y: &mut [f32],
+) {
+    let x_d = DeviceBuffer::from_host(stream, x).expect("copy x");
+    let mut y_d = DeviceBuffer::from_host(stream, y).expect("copy y");
 
-    let module = kernels::load(&ctx).expect("load PTX");
     module
-        .my_kernel(&stream, LaunchConfig::for_num_elems(x.len() as u32),
-                   alpha, &x_d, &mut y_d)
+        .my_op(stream, LaunchConfig::for_num_elems(x.len() as u32),
+               alpha, &x_d, &mut y_d)
         .expect("launch");
 
-    let out = y_d.to_host_vec(&stream).unwrap();
+    let out = y_d.to_host_vec(stream).expect("copy y back");
     y.copy_from_slice(&out);
 }
 ```
 
-Working reference: `crates/cublas-l1/src/saxpy.rs`. For tiled / shared-memory
-kernels see `../cuda-oxide/crates/rustc-codegen-cuda/examples/tiled_gemm/`.
+Then in the level crate's `lib.rs`, add a `Modules` struct that loads all
+kernels for the level from one PTX file and types each view:
+
+```rust
+pub struct Modules {
+    pub my_op: my_op::kernels::LoadedModule,
+    // ...
+}
+
+impl Modules {
+    pub fn load(ctx: &Arc<CudaContext>) -> Result<Self, DriverError> {
+        let raw = ctx.load_module_from_file("cublas_l1.ptx")?;
+        Ok(Self { my_op: my_op::kernels::from_module(raw)? })
+    }
+}
+```
+
+And in `cublas-rs/src/lib.rs`, expose a friendly method on `Handle`:
+
+```rust
+impl Handle {
+    pub fn my_op(&self, alpha: f32, x: &[f32], y: &mut [f32]) {
+        cublas_l1::my_op(&self.l1.my_op, &self.stream, alpha, x, y);
+    }
+}
+```
+
+Working reference: `crates/cublas-l1/src/saxpy.rs` (file-level kernel),
+`crates/cublas-l1/src/lib.rs` (`Modules`), `crates/cublas-rs/src/lib.rs`
+(`Handle::saxpy`). For tiled / shared-memory kernels see
+`../cuda-oxide/crates/rustc-codegen-cuda/examples/tiled_gemm/`.
 
 ## API conventions
 
-**v1 (current):** Functions take host slices. Internally allocate device
-buffers, launch, copy back. Easy to call, wasteful for repeated calls.
+**Why this shape:** cargo-oxide's standalone mode only embeds PTX into the
+`.oxart` section of the *entry crate*. Kernels defined in a dep crate aren't
+embedded into the final binary, so `kernels::load(&ctx)` from inside a dep
+crate's host op fails with `ModuleNotFound`. The workaround is to load the
+per-crate PTX file (`cublas_l1.ptx`, ...) from cwd via
+`ctx.load_module_from_file` and type it via `kernels::from_module`. Binaries
+that use `Handle` must run from the workspace root (where cargo-oxide drops
+the PTX files).
 
-**v2 (planned):** A `Handle` wraps `CudaContext` + `CudaStream`. Kernel
-functions take `&Handle` + `&DeviceBuffer<T>`. Lets callers amortize context
-creation and chain ops on the same stream. The v1 functions stay as
-`*_simple` convenience wrappers.
+**v1 (current):**
+- Public API is the `Handle` type on `cublas-rs`, modelled after
+  `cublasHandle_t` from the C cuBLAS API: `Handle::new()?`, then
+  `handle.saxpy(n, alpha, &x, &mut y)`.
+- Level crates (`cublas-l1`, ...) expose free host fns that take a typed
+  kernel module + stream as the first two args. `Handle` owns those modules
+  and forwards.
+- Host fns still take `&[T]` host slices and allocate device buffers per
+  call. Wasteful for repeated calls; fine for the smoke-test use case.
 
-When the v2 split happens, the v1 signatures already in this repo stay as-is
-— add a parallel module rather than retrofit.
+**v2 (planned):** Public ops on `Handle` will gain `&DeviceBuffer<T>`
+variants so callers can amortize H2D/D2H. Slice-taking variants stay as the
+shorthand.
 
 ## Implementation status
 

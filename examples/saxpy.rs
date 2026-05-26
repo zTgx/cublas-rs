@@ -1,9 +1,12 @@
 //! SAXPY end-to-end smoke test.
 //!
+//! Mirrors the C cuBLAS calling pattern:
+//!   cublasHandle_t h;  cublasCreate(&h);  cublasSaxpy(h, ...);
+//!
 //! Run with:
 //!   cargo oxide run --bin saxpy
 
-use cublas_rs::saxpy;
+use cublas_rs::Handle;
 
 fn main() {
     const N: usize = 1024;
@@ -11,7 +14,8 @@ fn main() {
     let x: Vec<f32> = (0..N).map(|i| i as f32).collect();
     let mut y = vec![1.0f32; N];
 
-    saxpy(N, alpha, &x, &mut y);
+    let h = Handle::new().expect("Handle::new — needs a CUDA device and `cublas_l1.ptx` in cwd");
+    h.saxpy(N, alpha, &x, &mut y);
 
     let mut errors = 0;
     for i in 0..N {

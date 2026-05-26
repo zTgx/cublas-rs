@@ -11,8 +11,9 @@ repository.workspace = true
 # makes a bare `cargo oxide run` exercise the most basic toolchain path
 # (no BLAS dep, no shared memory) — works on any CUDA card sm_20+.
 default-run = "hello"
-# Files in `examples/` are declared explicitly as `[[bin]]` below — disable
-# auto-discovery so the same file isn't claimed by both target kinds.
+# Example sources live at the repo root in `/examples/`, declared explicitly as
+# `[[bin]]` below. No `examples/` dir inside this crate, so auto-discovery is
+# already a no-op — `autoexamples = false` is kept for clarity.
 autoexamples = false
 
 [dependencies]
@@ -28,12 +29,12 @@ cuda-host.workspace = true
 
 [[bin]]
 name = "hello"
-path = "examples/hello.rs"
+path = "../../examples/hello.rs"
 
 [[bin]]
 name = "saxpy"
-path = "examples/saxpy.rs"
+path = "../../examples/saxpy.rs"
 
 [[bin]]
 name = "sgemm_basic"
-path = "examples/sgemm_basic.rs"
+path = "../../examples/sgemm_basic.rs"

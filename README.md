@@ -17,26 +17,25 @@ implementation status table.
 
 ## Quick start
 
+Modelled after the C cuBLAS API — build a `Handle` once, then call BLAS ops
+as methods:
+
 ```rust
-use cublas_rs::saxpy;
+use cublas_rs::Handle;
 
 fn main() {
+    let h = Handle::new().expect("Handle::new");
     let alpha = 2.0f32;
     let x = vec![1.0f32; 1024];
     let mut y = vec![1.0f32; 1024];
 
-    saxpy(x.len(), alpha, &x, &mut y);
+    h.saxpy(x.len(), alpha, &x, &mut y);
     // y[i] = 2.0 * 1.0 + 1.0 = 3.0
 }
 ```
 
-By BLAS-level convention:
-
-```rust
-use cublas_rs::level1::saxpy;
-use cublas_rs::level2::sgemv;
-use cublas_rs::level3::sgemm_naive;
-```
+`Handle::new` loads the PTX files cargo-oxide drops in the workspace root
+(`cublas_l1.ptx`, ...), so run binaries from the workspace root.
 
 ## Build
 
@@ -54,10 +53,10 @@ cargo oxide run --bin saxpy         # L1 kernel smoke test
 cargo oxide run --bin sgemm_basic   # L3 (stub — will panic)
 ```
 
-Examples live at `crates/cublas-rs/examples/` and are declared as `[[bin]]`
-targets — cargo-oxide forwards `--bin`, not `--example`. `default-members`
-in the workspace `Cargo.toml` lets these commands work from the repo root
-without `-p cublas-rs`.
+Example sources live at the repo root in `examples/`, owned by the facade
+crate via explicit `[[bin]]` entries — cargo-oxide forwards `--bin`, not
+`--example`. `default-members` in the workspace `Cargo.toml` lets these
+commands work from the repo root without `-p cublas-rs`.
 
 For pure type-checking (host crates + IDE), plain cargo works:
 
