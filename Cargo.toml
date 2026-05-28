@@ -33,10 +33,10 @@ cublas-l1 = { version = "0.1.0", path = "crates/cublas-l1" }
 cublas-l2 = { version = "0.1.0", path = "crates/cublas-l2" }
 cublas-l3 = { version = "0.1.0", path = "crates/cublas-l3" }
 
-# cuda-oxide local checkout (../cuda-oxide). Switch to git deps when releasing.
-cuda-core = { path = "../cuda-oxide/crates/cuda-core" }
-cuda-device = { path = "../cuda-oxide/crates/cuda-device" }
-cuda-host = { path = "../cuda-oxide/crates/cuda-host" }
+# cuda-oxide from git (https://github.com/NVlabs/cuda-oxide).
+cuda-core = { git = "https://github.com/NVlabs/cuda-oxide" }
+cuda-device = { git = "https://github.com/NVlabs/cuda-oxide" }
+cuda-host = { git = "https://github.com/NVlabs/cuda-oxide" }
 
 # Third-party
 half = "2.7"
